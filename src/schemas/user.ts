@@ -20,11 +20,11 @@ export const UserSchema = z.object({
   updated_at: z.string().nullable().optional(),
 })
 
-export type User = z.infer<typeof UserSchema>
+export interface User extends z.infer<typeof UserSchema> {}
 
 // Get Self response schema
 export const GetSelfResponseSchema = z.object({
   user: UserSchema,
 })
 
-export type GetSelfResponse = z.infer<typeof GetSelfResponseSchema>
+export interface GetSelfResponse extends z.infer<typeof GetSelfResponseSchema> {}

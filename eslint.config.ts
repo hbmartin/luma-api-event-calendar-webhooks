@@ -73,6 +73,9 @@ export default defineConfig([
       },
     },
     settings: {
+      jest: {
+        version: 29,
+      },
       'import/resolver': {
         typescript: {
           project: ['./tsconfig*.json'],

@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
-import {
+import { Schemas } from "../src/index.js";
+
+const {
   // Common schemas
   ApprovalStatusSchema,
   GuestStatusSchema,
@@ -45,7 +47,7 @@ import {
   CreateWebhookRequestSchema,
   WebhookPayloadSchema,
   parseWebhookPayload,
-} from "../src/index.js";
+} = Schemas;
 
 describe("Common Schemas", () => {
   describe("ApprovalStatusSchema", () => {

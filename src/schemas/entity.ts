@@ -7,7 +7,7 @@ export const LookupEntityParamsSchema = z.object({
   slug: z.string(),
 })
 
-export type LookupEntityParams = z.infer<typeof LookupEntityParamsSchema>
+export interface LookupEntityParams extends z.infer<typeof LookupEntityParamsSchema> {}
 
 // Entity schema
 export const EntitySchema = z.object({
@@ -17,11 +17,11 @@ export const EntitySchema = z.object({
   slug: z.string().nullable().optional(),
 })
 
-export type Entity = z.infer<typeof EntitySchema>
+export interface Entity extends z.infer<typeof EntitySchema> {}
 
 // Lookup entity response
 export const LookupEntityResponseSchema = z.object({
   entity: EntitySchema.nullable(),
 })
 
-export type LookupEntityResponse = z.infer<typeof LookupEntityResponseSchema>
+export interface LookupEntityResponse extends z.infer<typeof LookupEntityResponseSchema> {}

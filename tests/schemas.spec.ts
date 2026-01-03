@@ -5,6 +5,7 @@ import {
   GuestStatusSchema,
   WebhookEventTypeSchema,
   WebhookStatusSchema,
+  PaginationParamsSchema,
   EntityTypeSchema,
   TagColorSchema,
   LocationTypeSchema,
@@ -23,16 +24,25 @@ import {
   TicketTypeSchema,
   GetEventResponseSchema,
   GetGuestsResponseSchema,
+  GetGuestParamsSchema,
   CreateEventRequestSchema,
+  CreateEventCouponRequestSchema,
   // Calendar schemas
   PersonTagSchema,
   PersonSchema,
   ListCalendarEventsResponseSchema,
+  LookupCalendarEventParamsSchema,
+  AddEventToCalendarRequestSchema,
+  ApplyPersonTagRequestSchema,
+  RemovePersonTagRequestSchema,
+  CreateCalendarCouponRequestSchema,
   // Membership schemas
   MembershipTierSchema,
   MemberSchema,
+  UpdateMemberStatusRequestSchema,
   // Webhook schemas
   WebhookSchema,
+  CreateWebhookRequestSchema,
   WebhookPayloadSchema,
   parseWebhookPayload,
 } from "../src/index.js";
@@ -128,6 +138,18 @@ describe("Common Schemas", () => {
     it("should accept partial geo address", () => {
       expect(GeoAddressJsonSchema.safeParse({}).success).toBe(true);
       expect(GeoAddressJsonSchema.safeParse({ city: "San Francisco" }).success).toBe(true);
+    });
+  });
+
+  describe("PaginationParamsSchema", () => {
+    it("should accept cursor and limit", () => {
+      const params = { cursor: "page-1", limit: 25 };
+      expect(PaginationParamsSchema.safeParse(params).success).toBe(true);
+    });
+
+    it("should reject invalid limit", () => {
+      const params = { cursor: "page-1", limit: 0 };
+      expect(PaginationParamsSchema.safeParse(params).success).toBe(false);
     });
   });
 });
@@ -358,6 +380,45 @@ describe("Event Schemas", () => {
     });
   });
 
+  describe("GetGuestParamsSchema", () => {
+    it("should accept lookup by guest_api_id", () => {
+      const params = { guest_api_id: "gst_123" };
+      expect(GetGuestParamsSchema.safeParse(params).success).toBe(true);
+    });
+
+    it("should accept lookup by event_api_id and email", () => {
+      const params = { event_api_id: "evt_123", email: "guest@example.com" };
+      expect(GetGuestParamsSchema.safeParse(params).success).toBe(true);
+    });
+
+    it("should accept lookup by event_api_id and phone_number", () => {
+      const params = { event_api_id: "evt_123", phone_number: "1234567890" };
+      expect(GetGuestParamsSchema.safeParse(params).success).toBe(true);
+    });
+
+    it("should reject missing identifiers", () => {
+      expect(GetGuestParamsSchema.safeParse({}).success).toBe(false);
+    });
+
+    it("should reject email without event_api_id", () => {
+      const params = { email: "guest@example.com" };
+      expect(GetGuestParamsSchema.safeParse(params).success).toBe(false);
+    });
+
+    it("should reject phone_number without event_api_id", () => {
+      const params = { phone_number: "1234567890" };
+      expect(GetGuestParamsSchema.safeParse(params).success).toBe(false);
+    });
+
+    it("should reject multiple identifiers", () => {
+      const params = {
+        guest_api_id: "gst_123",
+        email: "guest@example.com",
+      };
+      expect(GetGuestParamsSchema.safeParse(params).success).toBe(false);
+    });
+  });
+
   describe("CreateEventRequestSchema", () => {
     it("should accept valid create event request", () => {
       const request = {
@@ -388,6 +449,37 @@ describe("Event Schemas", () => {
         // missing start_at and timezone
       };
       expect(CreateEventRequestSchema.safeParse(invalidRequest).success).toBe(false);
+    });
+  });
+
+  describe("CreateEventCouponRequestSchema", () => {
+    it("should accept percentage discount coupon", () => {
+      const request = {
+        event_api_id: "evt_123",
+        code: "PCT20",
+        discount_type: "percentage",
+        discount_percentage: 20,
+      };
+      expect(CreateEventCouponRequestSchema.safeParse(request).success).toBe(true);
+    });
+
+    it("should accept fixed amount discount coupon", () => {
+      const request = {
+        event_api_id: "evt_123",
+        code: "OFF10",
+        discount_type: "fixed_amount",
+        discount_amount: 10,
+      };
+      expect(CreateEventCouponRequestSchema.safeParse(request).success).toBe(true);
+    });
+
+    it("should reject coupon missing discount fields", () => {
+      const request = {
+        event_api_id: "evt_123",
+        code: "BAD",
+        discount_type: "percentage",
+      };
+      expect(CreateEventCouponRequestSchema.safeParse(request).success).toBe(false);
     });
   });
 });
@@ -431,6 +523,120 @@ describe("Calendar Schemas", () => {
       expect(ListCalendarEventsResponseSchema.safeParse(response).success).toBe(true);
     });
   });
+
+  describe("LookupCalendarEventParamsSchema", () => {
+    it("should accept event_api_id lookup", () => {
+      const params = { event_api_id: "evt_123" };
+      expect(LookupCalendarEventParamsSchema.safeParse(params).success).toBe(true);
+    });
+
+    it("should accept url lookup", () => {
+      const params = { url: "https://lu.ma/test-event" };
+      expect(LookupCalendarEventParamsSchema.safeParse(params).success).toBe(true);
+    });
+
+    it("should reject missing lookup params", () => {
+      expect(LookupCalendarEventParamsSchema.safeParse({}).success).toBe(false);
+    });
+
+    it("should reject multiple lookup params", () => {
+      const params = { event_api_id: "evt_123", url: "https://lu.ma/test-event" };
+      expect(LookupCalendarEventParamsSchema.safeParse(params).success).toBe(false);
+    });
+  });
+
+  describe("AddEventToCalendarRequestSchema", () => {
+    it("should accept event_api_id", () => {
+      const request = { event_api_id: "evt_123" };
+      expect(AddEventToCalendarRequestSchema.safeParse(request).success).toBe(true);
+    });
+
+    it("should accept url", () => {
+      const request = { url: "https://lu.ma/test-event" };
+      expect(AddEventToCalendarRequestSchema.safeParse(request).success).toBe(true);
+    });
+
+    it("should reject missing event identifiers", () => {
+      expect(AddEventToCalendarRequestSchema.safeParse({}).success).toBe(false);
+    });
+
+    it("should reject multiple identifiers", () => {
+      const request = { event_api_id: "evt_123", url: "https://lu.ma/test-event" };
+      expect(AddEventToCalendarRequestSchema.safeParse(request).success).toBe(false);
+    });
+  });
+
+  describe("ApplyPersonTagRequestSchema", () => {
+    it("should accept user_api_ids", () => {
+      const request = { tag_api_id: "tag_123", user_api_ids: ["usr_1"] };
+      expect(ApplyPersonTagRequestSchema.safeParse(request).success).toBe(true);
+    });
+
+    it("should accept emails", () => {
+      const request = { tag_api_id: "tag_123", emails: ["user@example.com"] };
+      expect(ApplyPersonTagRequestSchema.safeParse(request).success).toBe(true);
+    });
+
+    it("should reject empty inputs", () => {
+      const request = { tag_api_id: "tag_123" };
+      expect(ApplyPersonTagRequestSchema.safeParse(request).success).toBe(false);
+    });
+
+    it("should reject empty arrays", () => {
+      const request = { tag_api_id: "tag_123", user_api_ids: [] };
+      expect(ApplyPersonTagRequestSchema.safeParse(request).success).toBe(false);
+    });
+  });
+
+  describe("RemovePersonTagRequestSchema", () => {
+    it("should accept user_api_ids", () => {
+      const request = { tag_api_id: "tag_123", user_api_ids: ["usr_1"] };
+      expect(RemovePersonTagRequestSchema.safeParse(request).success).toBe(true);
+    });
+
+    it("should accept emails", () => {
+      const request = { tag_api_id: "tag_123", emails: ["user@example.com"] };
+      expect(RemovePersonTagRequestSchema.safeParse(request).success).toBe(true);
+    });
+
+    it("should reject empty inputs", () => {
+      const request = { tag_api_id: "tag_123" };
+      expect(RemovePersonTagRequestSchema.safeParse(request).success).toBe(false);
+    });
+
+    it("should reject empty arrays", () => {
+      const request = { tag_api_id: "tag_123", emails: [] };
+      expect(RemovePersonTagRequestSchema.safeParse(request).success).toBe(false);
+    });
+  });
+
+  describe("CreateCalendarCouponRequestSchema", () => {
+    it("should accept percentage discount coupon", () => {
+      const request = {
+        code: "PCT20",
+        discount_type: "percentage",
+        discount_percentage: 20,
+      };
+      expect(CreateCalendarCouponRequestSchema.safeParse(request).success).toBe(true);
+    });
+
+    it("should accept fixed amount discount coupon", () => {
+      const request = {
+        code: "OFF10",
+        discount_type: "fixed_amount",
+        discount_amount: 10,
+      };
+      expect(CreateCalendarCouponRequestSchema.safeParse(request).success).toBe(true);
+    });
+
+    it("should reject coupon missing discount fields", () => {
+      const request = {
+        code: "BAD",
+        discount_type: "percentage",
+      };
+      expect(CreateCalendarCouponRequestSchema.safeParse(request).success).toBe(false);
+    });
+  });
 });
 
 describe("Membership Schemas", () => {
@@ -459,6 +665,44 @@ describe("Membership Schemas", () => {
       expect(MemberSchema.safeParse(validMember).success).toBe(true);
     });
   });
+
+  describe("UpdateMemberStatusRequestSchema", () => {
+    it("should accept update by user_api_id", () => {
+      const request = {
+        tier_api_id: "tier_123",
+        user_api_id: "usr_123",
+        status: "approved",
+      };
+      expect(UpdateMemberStatusRequestSchema.safeParse(request).success).toBe(true);
+    });
+
+    it("should accept update by email", () => {
+      const request = {
+        tier_api_id: "tier_123",
+        email: "member@example.com",
+        status: "declined",
+      };
+      expect(UpdateMemberStatusRequestSchema.safeParse(request).success).toBe(true);
+    });
+
+    it("should reject missing identifiers", () => {
+      const request = {
+        tier_api_id: "tier_123",
+        status: "approved",
+      };
+      expect(UpdateMemberStatusRequestSchema.safeParse(request).success).toBe(false);
+    });
+
+    it("should reject multiple identifiers", () => {
+      const request = {
+        tier_api_id: "tier_123",
+        user_api_id: "usr_123",
+        email: "member@example.com",
+        status: "approved",
+      };
+      expect(UpdateMemberStatusRequestSchema.safeParse(request).success).toBe(false);
+    });
+  });
 });
 
 describe("Webhook Schemas", () => {
@@ -471,6 +715,25 @@ describe("Webhook Schemas", () => {
         status: "active",
       };
       expect(WebhookSchema.safeParse(validWebhook).success).toBe(true);
+    });
+  });
+
+  describe("CreateWebhookRequestSchema", () => {
+    it("should accept valid request", () => {
+      const request = {
+        calendar_id: "cal_123",
+        url: "https://example.com/webhook",
+        event_types: ["event.created"],
+      };
+      expect(CreateWebhookRequestSchema.safeParse(request).success).toBe(true);
+    });
+
+    it("should reject missing calendar_id", () => {
+      const request = {
+        url: "https://example.com/webhook",
+        event_types: ["event.created"],
+      };
+      expect(CreateWebhookRequestSchema.safeParse(request).success).toBe(false);
     });
   });
 

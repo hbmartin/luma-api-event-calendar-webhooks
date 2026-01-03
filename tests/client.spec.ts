@@ -6,11 +6,19 @@ import {
   LumaNetworkError,
   LumaNotFoundError,
   LumaRateLimitError,
+  LumaValidationError,
 } from "../src/errors.js";
 
 // Mock fetch globally
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
+
+const hasHeaders = (value: unknown): value is { headers: HeadersInit } => {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+  return "headers" in value;
+};
 
 describe("LumaClient", () => {
   let client: LumaClient;
@@ -168,11 +176,11 @@ describe("LumaClient", () => {
       });
 
       const result = await client.listCalendarEvents({
-        calendar_api_id: "cal-123",
+        after: "2024-01-01T00:00:00Z",
       });
 
       expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining("calendar_api_id=cal-123"),
+        expect.stringContaining("after=2024-01-01T00%3A00%3A00Z"),
         expect.any(Object)
       );
       expect(result.entries).toHaveLength(1);
@@ -198,7 +206,7 @@ describe("LumaClient", () => {
       });
 
       const result = await client.createWebhook({
-        calendar_api_id: "cal-123",
+        calendar_id: "cal-123",
         url: "https://example.com/webhook",
         event_types: ["event.created"],
       });
@@ -248,7 +256,11 @@ describe("LumaClient", () => {
         expect.fail("Should have thrown");
       } catch (error) {
         expect(error).toBeInstanceOf(LumaRateLimitError);
-        expect((error as LumaRateLimitError).retryAfter).toBe(60);
+        if (error instanceof LumaRateLimitError) {
+          expect(error.retryAfter).toBe(60);
+        } else {
+          throw new Error("Expected LumaRateLimitError");
+        }
       }
     });
 
@@ -265,7 +277,11 @@ describe("LumaClient", () => {
         expect.fail("Should have thrown");
       } catch (error) {
         expect(error).toBeInstanceOf(LumaApiError);
-        expect((error as LumaApiError).statusCode).toBe(500);
+        if (error instanceof LumaApiError) {
+          expect(error.statusCode).toBe(500);
+        } else {
+          throw new Error("Expected LumaApiError");
+        }
       }
     });
 
@@ -291,6 +307,16 @@ describe("LumaClient", () => {
       // The AbortError should be caught and wrapped
       await expect(timeoutClient.getSelf()).rejects.toThrow(LumaNetworkError);
     });
+
+    it("should throw LumaValidationError on schema mismatch", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers({ "content-type": "application/json" }),
+        json: async () => ({ user: {} }),
+      });
+
+      await expect(client.getSelf()).rejects.toThrow(LumaValidationError);
+    });
   });
 
   describe("query parameters", () => {
@@ -306,15 +332,18 @@ describe("LumaClient", () => {
       });
 
       await client.listCalendarEvents({
-        calendar_api_id: "cal-123",
         cursor: undefined,
         limit: undefined,
       });
 
-      const calledUrl = mockFetch.mock.calls[0]?.[0] as string;
-      expect(calledUrl).toContain("calendar_api_id=cal-123");
-      expect(calledUrl).not.toContain("cursor=");
-      expect(calledUrl).not.toContain("limit=");
+      const calledUrl = mockFetch.mock.calls[0]?.[0];
+      if (typeof calledUrl !== "string") {
+        throw new Error("Expected request URL to be a string.");
+      }
+      expect(calledUrl).not.toContain("pagination_cursor=");
+      expect(calledUrl).not.toContain("pagination_limit=");
+      expect(calledUrl).not.toMatch(/[?&]cursor=/);
+      expect(calledUrl).not.toMatch(/[?&]limit=/);
     });
 
     it("should include defined query parameters", async () => {
@@ -329,14 +358,18 @@ describe("LumaClient", () => {
       });
 
       await client.listCalendarEvents({
-        calendar_api_id: "cal-123",
         cursor: "page-2",
         limit: 50,
       });
 
-      const calledUrl = mockFetch.mock.calls[0]?.[0] as string;
-      expect(calledUrl).toContain("cursor=page-2");
-      expect(calledUrl).toContain("limit=50");
+      const calledUrl = mockFetch.mock.calls[0]?.[0];
+      if (typeof calledUrl !== "string") {
+        throw new Error("Expected request URL to be a string.");
+      }
+      expect(calledUrl).toContain("pagination_cursor=page-2");
+      expect(calledUrl).toContain("pagination_limit=50");
+      expect(calledUrl).not.toMatch(/[?&]cursor=/);
+      expect(calledUrl).not.toMatch(/[?&]limit=/);
     });
   });
 
@@ -350,7 +383,10 @@ describe("LumaClient", () => {
 
       await client.getSelf();
 
-      const calledOptions = mockFetch.mock.calls[0]?.[1] as RequestInit;
+      const calledOptions: unknown = mockFetch.mock.calls[0]?.[1];
+      if (!hasHeaders(calledOptions)) {
+        throw new Error("Expected request options with headers.");
+      }
       expect(calledOptions.headers).toEqual(
         expect.objectContaining({
           "x-luma-api-key": "test-api-key",
@@ -367,7 +403,10 @@ describe("LumaClient", () => {
 
       await client.getSelf();
 
-      const calledOptions = mockFetch.mock.calls[0]?.[1] as RequestInit;
+      const calledOptions: unknown = mockFetch.mock.calls[0]?.[1];
+      if (!hasHeaders(calledOptions)) {
+        throw new Error("Expected request options with headers.");
+      }
       expect(calledOptions.headers).toEqual(
         expect.objectContaining({
           "Content-Type": "application/json",

@@ -2,7 +2,6 @@ import js from "@eslint/js";
 import { defineConfig, globalIgnores } from "eslint/config";
 import codeComplete from "eslint-plugin-code-complete";
 import importPlugin from "eslint-plugin-import";
-import jsxA11y from "eslint-plugin-jsx-a11y";
 import eslintPluginPrettierRecommended from "eslint-plugin-prettier/recommended";
 import pluginPromise from "eslint-plugin-promise";
 import sonarjs from "eslint-plugin-sonarjs";
@@ -20,11 +19,7 @@ export default defineConfig([
 		"node_modules/**",
 		"coverage/**",
 		"vite.config.ts",
-		"tailwind.config.js",
 		".github/**",
-		"storybook-static",
-		".storybook",
-		"demo/vite.config.ts",
 	]),
 	{
 		files: ["**/*.{ts,tsx}"],
@@ -38,7 +33,6 @@ export default defineConfig([
 			importPlugin.flatConfigs.typescript,
 			sonarjs.configs.recommended,
 			pluginPromise.configs["flat/recommended"],
-			jsxA11y.flatConfigs.recommended,
 			eslintPluginSecurity.configs.recommended,
 			packageJson.configs.recommended,
 		],
@@ -64,7 +58,7 @@ export default defineConfig([
 					project: ["./tsconfig*.json"],
 				},
 				node: {
-					extensions: [".js", ".jsx", ".ts", ".tsx"],
+					extensions: [".js", ".ts", ".tsx"],
 				},
 			},
 		},

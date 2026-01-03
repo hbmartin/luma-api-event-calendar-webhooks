@@ -38,9 +38,12 @@ yarn add luma-api-event-calendar-webhooks zod
 ```ts
 import { LumaClient } from 'luma-api-event-calendar-webhooks'
 
-const client = new LumaClient({
-  apiKey: process.env.LUMA_API_KEY ?? '',
-})
+const apiKey = process.env.LUMA_API_KEY
+if (!apiKey) {
+  throw new Error('LUMA_API_KEY environment variable is required')
+}
+
+const client = new LumaClient({ apiKey })
 
 const me = await client.user.getSelf()
 const event = await client.event.get({ event_api_id: 'evt_123' })
@@ -54,8 +57,13 @@ console.log(event.event.name)
 ```ts
 import { LumaClient, BASE_URL } from 'luma-api-event-calendar-webhooks'
 
+const apiKey = process.env.LUMA_API_KEY
+if (!apiKey) {
+  throw new Error('LUMA_API_KEY environment variable is required')
+}
+
 const client = new LumaClient({
-  apiKey: process.env.LUMA_API_KEY ?? '',
+  apiKey,
   baseUrl: BASE_URL, // default: https://public-api.luma.com
   timeout: 30_000, // default: 30000 ms
 })
@@ -125,8 +133,14 @@ switch (payload.type) {
 ```
 
 Supported webhook types include:
-`event.created`, `event.updated`, `guest.registered`, `guest.updated`,
-`ticket.registered`, `calendar.event.added`, `calendar.person.subscribed`.
+
+* `event.created`
+* `event.updated`
+* `guest.registered`
+* `guest.updated`
+* `ticket.registered`
+* `calendar.event.added`
+* `calendar.person.subscribed`
 
 ## Pagination
 

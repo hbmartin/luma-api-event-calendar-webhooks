@@ -1,13 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { LumaClient, BASE_URL, parseRetryAfter } from "../src/client/index.js";
-import {
-  LumaApiError,
-  LumaAuthenticationError,
-  LumaNetworkError,
-  LumaNotFoundError,
-  LumaRateLimitError,
-  LumaValidationError,
-} from "../src/errors.js";
+import { LumaClient, BASE_URL, parseRetryAfter, LumaError, LumaRateLimitError, LumaApiError, LumaNetworkError, LumaAuthenticationError, LumaNotFoundError, LumaValidationError } from "../src/index.js";
 
 // Mock fetch globally
 const mockFetch = vi.fn();
@@ -61,7 +53,7 @@ describe("LumaClient", () => {
     });
   });
 
-  describe("getSelf", () => {
+  describe("user.getSelf", () => {
     it("should fetch current user", async () => {
       const mockResponse = {
         user: {
@@ -77,7 +69,7 @@ describe("LumaClient", () => {
         json: async () => mockResponse,
       });
 
-      const result = await client.getSelf();
+      const result = await client.user.getSelf();
 
       expect(mockFetch).toHaveBeenCalledWith(
         `${BASE_URL}/v1/user/get-self`,
@@ -92,7 +84,7 @@ describe("LumaClient", () => {
     });
   });
 
-  describe("getEvent", () => {
+  describe("event.get", () => {
     it("should fetch event by ID", async () => {
       const mockEvent = {
         event: {
@@ -110,7 +102,7 @@ describe("LumaClient", () => {
         json: async () => mockEvent,
       });
 
-      const result = await client.getEvent({ event_api_id: "evt-123" });
+      const result = await client.event.get({ event_api_id: "evt-123" });
 
       expect(mockFetch).toHaveBeenCalledWith(
         `${BASE_URL}/v1/event/get?event_api_id=evt-123`,
@@ -120,7 +112,7 @@ describe("LumaClient", () => {
     });
   });
 
-  describe("createEvent", () => {
+  describe("event.create", () => {
     it("should create new event", async () => {
       const mockResponse = {
         event: {
@@ -138,7 +130,7 @@ describe("LumaClient", () => {
         json: async () => mockResponse,
       });
 
-      const result = await client.createEvent({
+      const result = await client.event.create({
         name: "New Event",
         start_at: "2024-02-01T14:00:00Z",
         end_at: "2024-02-01T16:00:00Z",
@@ -156,7 +148,7 @@ describe("LumaClient", () => {
     });
   });
 
-  describe("listCalendarEvents", () => {
+  describe("calendar.listEvents", () => {
     it("should list calendar events with pagination", async () => {
       const mockResponse = {
         entries: [
@@ -175,7 +167,7 @@ describe("LumaClient", () => {
         json: async () => mockResponse,
       });
 
-      const result = await client.listCalendarEvents({
+      const result = await client.calendar.listEvents({
         after: "2024-01-01T00:00:00Z",
       });
 
@@ -188,7 +180,7 @@ describe("LumaClient", () => {
     });
   });
 
-  describe("createWebhook", () => {
+  describe("webhook.create", () => {
     it("should create webhook", async () => {
       const mockResponse = {
         webhook: {
@@ -205,7 +197,7 @@ describe("LumaClient", () => {
         json: async () => mockResponse,
       });
 
-      const result = await client.createWebhook({
+      const result = await client.webhook.create({
         calendar_id: "cal-123",
         url: "https://example.com/webhook",
         event_types: ["event.created"],
@@ -224,7 +216,7 @@ describe("LumaClient", () => {
         json: async () => ({ message: "Invalid API key" }),
       });
 
-      await expect(client.getSelf()).rejects.toThrow(LumaAuthenticationError);
+      await expect(client.user.getSelf()).rejects.toThrow(LumaAuthenticationError);
     });
 
     it("should throw LumaNotFoundError on 404", async () => {
@@ -236,7 +228,7 @@ describe("LumaClient", () => {
       });
 
       await expect(
-        client.getEvent({ event_api_id: "nonexistent" })
+        client.event.get({ event_api_id: "nonexistent" })
       ).rejects.toThrow(LumaNotFoundError);
     });
 
@@ -252,7 +244,7 @@ describe("LumaClient", () => {
       });
 
       try {
-        await client.getSelf();
+        await client.user.getSelf();
         expect.fail("Should have thrown");
       } catch (error) {
         expect(error).toBeInstanceOf(LumaRateLimitError);
@@ -273,7 +265,7 @@ describe("LumaClient", () => {
       });
 
       try {
-        await client.getSelf();
+        await client.user.getSelf();
         expect.fail("Should have thrown");
       } catch (error) {
         expect(error).toBeInstanceOf(LumaApiError);
@@ -288,7 +280,7 @@ describe("LumaClient", () => {
     it("should throw LumaNetworkError on fetch failure", async () => {
       mockFetch.mockRejectedValueOnce(new Error("Network error"));
 
-      await expect(client.getSelf()).rejects.toThrow(LumaNetworkError);
+      await expect(client.user.getSelf()).rejects.toThrow(LumaNetworkError);
     });
 
     it("should throw LumaNetworkError on timeout", async () => {
@@ -305,7 +297,7 @@ describe("LumaClient", () => {
       );
 
       // The AbortError should be caught and wrapped
-      await expect(timeoutClient.getSelf()).rejects.toThrow(LumaNetworkError);
+      await expect(timeoutClient.user.getSelf()).rejects.toThrow(LumaNetworkError);
     });
 
     it("should throw LumaValidationError on schema mismatch", async () => {
@@ -315,7 +307,7 @@ describe("LumaClient", () => {
         json: async () => ({ user: {} }),
       });
 
-      await expect(client.getSelf()).rejects.toThrow(LumaValidationError);
+      await expect(client.user.getSelf()).rejects.toThrow(LumaValidationError);
     });
   });
 
@@ -331,7 +323,7 @@ describe("LumaClient", () => {
         }),
       });
 
-      await client.listCalendarEvents({
+      await client.calendar.listEvents({
         cursor: undefined,
         limit: undefined,
       });
@@ -357,7 +349,7 @@ describe("LumaClient", () => {
         }),
       });
 
-      await client.listCalendarEvents({
+      await client.calendar.listEvents({
         cursor: "page-2",
         limit: 50,
       });
@@ -381,7 +373,7 @@ describe("LumaClient", () => {
         json: async () => ({ user: { api_id: "user-123" } }),
       });
 
-      await client.getSelf();
+      await client.user.getSelf();
 
       const calledOptions: unknown = mockFetch.mock.calls[0]?.[1];
       if (!hasHeaders(calledOptions)) {
@@ -401,7 +393,7 @@ describe("LumaClient", () => {
         json: async () => ({ user: { api_id: "user-123" } }),
       });
 
-      await client.getSelf();
+      await client.user.getSelf();
 
       const calledOptions: unknown = mockFetch.mock.calls[0]?.[1];
       if (!hasHeaders(calledOptions)) {
@@ -498,7 +490,7 @@ describe("parseRetryAfter", () => {
       });
 
       try {
-        await client.getSelf();
+        await client.user.getSelf();
         expect.fail("Should have thrown");
       } catch (error) {
         expect(error).toBeInstanceOf(LumaRateLimitError);
@@ -525,7 +517,7 @@ describe("parseRetryAfter", () => {
       });
 
       try {
-        await client.getSelf();
+        await client.user.getSelf();
         expect.fail("Should have thrown");
       } catch (error) {
         expect(error).toBeInstanceOf(LumaRateLimitError);
@@ -551,7 +543,7 @@ describe("parseRetryAfter", () => {
       });
 
       try {
-        await client.getSelf();
+        await client.user.getSelf();
         expect.fail("Should have thrown");
       } catch (error) {
         expect(error).toBeInstanceOf(LumaRateLimitError);

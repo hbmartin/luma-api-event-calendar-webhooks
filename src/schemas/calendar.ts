@@ -14,7 +14,7 @@ export const CalendarEventEntrySchema = z.object({
   event: EventSchema,
 })
 
-export type CalendarEventEntry = z.infer<typeof CalendarEventEntrySchema>
+export interface CalendarEventEntry extends z.infer<typeof CalendarEventEntrySchema> {}
 
 // List calendar events params
 export const ListCalendarEventsParamsSchema = PaginationParamsSchema.extend({
@@ -24,12 +24,14 @@ export const ListCalendarEventsParamsSchema = PaginationParamsSchema.extend({
   sort_direction: SortDirectionSchema.optional(),
 })
 
-export type ListCalendarEventsParams = z.infer<typeof ListCalendarEventsParamsSchema>
+export interface ListCalendarEventsParams extends z.infer<typeof ListCalendarEventsParamsSchema> {}
 
 // List calendar events response
 export const ListCalendarEventsResponseSchema = PaginatedResponseSchema(CalendarEventEntrySchema)
 
-export type ListCalendarEventsResponse = z.infer<typeof ListCalendarEventsResponseSchema>
+export interface ListCalendarEventsResponse extends z.infer<
+  typeof ListCalendarEventsResponseSchema
+> {}
 
 // Person tag schema
 export const PersonTagSchema = z.object({
@@ -40,7 +42,7 @@ export const PersonTagSchema = z.object({
   updated_at: z.string().nullable().optional(),
 })
 
-export type PersonTag = z.infer<typeof PersonTagSchema>
+export interface PersonTag extends z.infer<typeof PersonTagSchema> {}
 
 // List person tags params
 export const ListPersonTagsParamsSchema = PaginationParamsSchema.extend({
@@ -48,12 +50,12 @@ export const ListPersonTagsParamsSchema = PaginationParamsSchema.extend({
   sort_direction: SortDirectionSchema.optional(),
 })
 
-export type ListPersonTagsParams = z.infer<typeof ListPersonTagsParamsSchema>
+export interface ListPersonTagsParams extends z.infer<typeof ListPersonTagsParamsSchema> {}
 
 // List person tags response
 export const ListPersonTagsResponseSchema = PaginatedResponseSchema(PersonTagSchema)
 
-export type ListPersonTagsResponse = z.infer<typeof ListPersonTagsResponseSchema>
+export interface ListPersonTagsResponse extends z.infer<typeof ListPersonTagsResponseSchema> {}
 
 // Lookup event params
 const CalendarEventLookupByApiIdSchema = z
@@ -81,7 +83,9 @@ export const LookupCalendarEventResponseSchema = z.object({
   is_managed: z.boolean().nullable().optional(),
 })
 
-export type LookupCalendarEventResponse = z.infer<typeof LookupCalendarEventResponseSchema>
+export interface LookupCalendarEventResponse extends z.infer<
+  typeof LookupCalendarEventResponseSchema
+> {}
 
 // Person schema (people in calendar)
 export const PersonSchema = z.object({
@@ -103,7 +107,7 @@ export const PersonSchema = z.object({
   updated_at: z.string().nullable().optional(),
 })
 
-export type Person = z.infer<typeof PersonSchema>
+export interface Person extends z.infer<typeof PersonSchema> {}
 
 // List people params
 export const ListPeopleParamsSchema = PaginationParamsSchema.extend({
@@ -114,22 +118,26 @@ export const ListPeopleParamsSchema = PaginationParamsSchema.extend({
   sort_direction: SortDirectionSchema.optional(),
 })
 
-export type ListPeopleParams = z.infer<typeof ListPeopleParamsSchema>
+export interface ListPeopleParams extends z.infer<typeof ListPeopleParamsSchema> {}
 
 // List people response
 export const ListPeopleResponseSchema = PaginatedResponseSchema(PersonSchema)
 
-export type ListPeopleResponse = z.infer<typeof ListPeopleResponseSchema>
+export interface ListPeopleResponse extends z.infer<typeof ListPeopleResponseSchema> {}
 
 // List calendar coupons params
 export const ListCalendarCouponsParamsSchema = PaginationParamsSchema
 
-export type ListCalendarCouponsParams = z.infer<typeof ListCalendarCouponsParamsSchema>
+export interface ListCalendarCouponsParams extends z.infer<
+  typeof ListCalendarCouponsParamsSchema
+> {}
 
 // List calendar coupons response
 export const ListCalendarCouponsResponseSchema = PaginatedResponseSchema(CouponSchema)
 
-export type ListCalendarCouponsResponse = z.infer<typeof ListCalendarCouponsResponseSchema>
+export interface ListCalendarCouponsResponse extends z.infer<
+  typeof ListCalendarCouponsResponseSchema
+> {}
 
 // Create calendar coupon request
 const CreateCalendarCouponBaseSchema = z.object({
@@ -161,7 +169,9 @@ export const CreateCalendarCouponResponseSchema = z.object({
   coupon: CouponSchema,
 })
 
-export type CreateCalendarCouponResponse = z.infer<typeof CreateCalendarCouponResponseSchema>
+export interface CreateCalendarCouponResponse extends z.infer<
+  typeof CreateCalendarCouponResponseSchema
+> {}
 
 // Update calendar coupon request
 export const UpdateCalendarCouponRequestSchema = z.object({
@@ -171,14 +181,18 @@ export const UpdateCalendarCouponRequestSchema = z.object({
   valid_until: z.string().optional(),
 })
 
-export type UpdateCalendarCouponRequest = z.infer<typeof UpdateCalendarCouponRequestSchema>
+export interface UpdateCalendarCouponRequest extends z.infer<
+  typeof UpdateCalendarCouponRequestSchema
+> {}
 
 // Update calendar coupon response
 export const UpdateCalendarCouponResponseSchema = z.object({
   coupon: CouponSchema,
 })
 
-export type UpdateCalendarCouponResponse = z.infer<typeof UpdateCalendarCouponResponseSchema>
+export interface UpdateCalendarCouponResponse extends z.infer<
+  typeof UpdateCalendarCouponResponseSchema
+> {}
 
 // Import person input
 export const ImportPersonInputSchema = z.object({
@@ -190,7 +204,7 @@ export const ImportPersonInputSchema = z.object({
   bio: z.string().optional(),
 })
 
-export type ImportPersonInput = z.infer<typeof ImportPersonInputSchema>
+export interface ImportPersonInput extends z.infer<typeof ImportPersonInputSchema> {}
 
 // Import people request
 export const ImportPeopleRequestSchema = z.object({
@@ -198,7 +212,7 @@ export const ImportPeopleRequestSchema = z.object({
   tag_api_ids: z.array(z.string()).optional(),
 })
 
-export type ImportPeopleRequest = z.infer<typeof ImportPeopleRequestSchema>
+export interface ImportPeopleRequest extends z.infer<typeof ImportPeopleRequestSchema> {}
 
 // Import people response
 export const ImportPeopleResponseSchema = z.object({
@@ -206,7 +220,7 @@ export const ImportPeopleResponseSchema = z.object({
   people: z.array(PersonSchema).optional(),
 })
 
-export type ImportPeopleResponse = z.infer<typeof ImportPeopleResponseSchema>
+export interface ImportPeopleResponse extends z.infer<typeof ImportPeopleResponseSchema> {}
 
 // Create person tag request
 export const CreatePersonTagRequestSchema = z.object({
@@ -214,14 +228,14 @@ export const CreatePersonTagRequestSchema = z.object({
   color: TagColorSchema.optional(),
 })
 
-export type CreatePersonTagRequest = z.infer<typeof CreatePersonTagRequestSchema>
+export interface CreatePersonTagRequest extends z.infer<typeof CreatePersonTagRequestSchema> {}
 
 // Create person tag response
 export const CreatePersonTagResponseSchema = z.object({
   tag: PersonTagSchema,
 })
 
-export type CreatePersonTagResponse = z.infer<typeof CreatePersonTagResponseSchema>
+export interface CreatePersonTagResponse extends z.infer<typeof CreatePersonTagResponseSchema> {}
 
 // Update person tag request
 export const UpdatePersonTagRequestSchema = z.object({
@@ -230,28 +244,28 @@ export const UpdatePersonTagRequestSchema = z.object({
   color: TagColorSchema.optional(),
 })
 
-export type UpdatePersonTagRequest = z.infer<typeof UpdatePersonTagRequestSchema>
+export interface UpdatePersonTagRequest extends z.infer<typeof UpdatePersonTagRequestSchema> {}
 
 // Update person tag response
 export const UpdatePersonTagResponseSchema = z.object({
   tag: PersonTagSchema,
 })
 
-export type UpdatePersonTagResponse = z.infer<typeof UpdatePersonTagResponseSchema>
+export interface UpdatePersonTagResponse extends z.infer<typeof UpdatePersonTagResponseSchema> {}
 
 // Delete person tag request
 export const DeletePersonTagRequestSchema = z.object({
   tag_api_id: LumaId.PersonTagApiIdSchema,
 })
 
-export type DeletePersonTagRequest = z.infer<typeof DeletePersonTagRequestSchema>
+export interface DeletePersonTagRequest extends z.infer<typeof DeletePersonTagRequestSchema> {}
 
 // Delete person tag response
 export const DeletePersonTagResponseSchema = z.object({
   success: z.boolean(),
 })
 
-export type DeletePersonTagResponse = z.infer<typeof DeletePersonTagResponseSchema>
+export interface DeletePersonTagResponse extends z.infer<typeof DeletePersonTagResponseSchema> {}
 
 // Add event to calendar request
 const AddEventToCalendarByApiIdSchema = z
@@ -279,7 +293,9 @@ export const AddEventToCalendarResponseSchema = z.object({
   event: EventSchema.optional(),
 })
 
-export type AddEventToCalendarResponse = z.infer<typeof AddEventToCalendarResponseSchema>
+export interface AddEventToCalendarResponse extends z.infer<
+  typeof AddEventToCalendarResponseSchema
+> {}
 
 // Apply person tag request
 export const ApplyPersonTagRequestSchema = z
@@ -292,7 +308,7 @@ export const ApplyPersonTagRequestSchema = z
     message: 'Either user_api_ids or emails must be provided.',
   })
 
-export type ApplyPersonTagRequest = z.infer<typeof ApplyPersonTagRequestSchema>
+export interface ApplyPersonTagRequest extends z.infer<typeof ApplyPersonTagRequestSchema> {}
 
 // Apply person tag response
 export const ApplyPersonTagResponseSchema = z.object({
@@ -300,7 +316,7 @@ export const ApplyPersonTagResponseSchema = z.object({
   applied_count: z.number().optional(),
 })
 
-export type ApplyPersonTagResponse = z.infer<typeof ApplyPersonTagResponseSchema>
+export interface ApplyPersonTagResponse extends z.infer<typeof ApplyPersonTagResponseSchema> {}
 
 // Remove person tag request
 export const RemovePersonTagRequestSchema = z
@@ -313,7 +329,7 @@ export const RemovePersonTagRequestSchema = z
     message: 'Either user_api_ids or emails must be provided.',
   })
 
-export type RemovePersonTagRequest = z.infer<typeof RemovePersonTagRequestSchema>
+export interface RemovePersonTagRequest extends z.infer<typeof RemovePersonTagRequestSchema> {}
 
 // Remove person tag response
 export const RemovePersonTagResponseSchema = z.object({
@@ -321,4 +337,4 @@ export const RemovePersonTagResponseSchema = z.object({
   removed_count: z.number().optional(),
 })
 
-export type RemovePersonTagResponse = z.infer<typeof RemovePersonTagResponseSchema>
+export interface RemovePersonTagResponse extends z.infer<typeof RemovePersonTagResponseSchema> {}

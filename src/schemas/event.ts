@@ -19,7 +19,7 @@ export const HostSchema = z.object({
   avatar_url: z.string().nullable().optional(),
 })
 
-export type Host = z.infer<typeof HostSchema>
+export interface Host extends z.infer<typeof HostSchema> {}
 
 // Event schema
 export const EventSchema = z.object({
@@ -49,21 +49,21 @@ export const EventSchema = z.object({
   updated_at: z.string().nullable().optional(),
 })
 
-export type Event = z.infer<typeof EventSchema>
+export interface Event extends z.infer<typeof EventSchema> {}
 
 // Get event params
 export const GetEventParamsSchema = z.object({
   event_api_id: LumaId.EventApiIdSchema,
 })
 
-export type GetEventParams = z.infer<typeof GetEventParamsSchema>
+export interface GetEventParams extends z.infer<typeof GetEventParamsSchema> {}
 
 // Get event response
 export const GetEventResponseSchema = z.object({
   event: EventSchema,
 })
 
-export type GetEventResponse = z.infer<typeof GetEventResponseSchema>
+export interface GetEventResponse extends z.infer<typeof GetEventResponseSchema> {}
 
 // Guest schema
 export const GuestSchema = z.object({
@@ -98,7 +98,7 @@ export const GuestSchema = z.object({
     .optional(),
 })
 
-export type Guest = z.infer<typeof GuestSchema>
+export interface Guest extends z.infer<typeof GuestSchema> {}
 
 // Get guest params
 const GuestLookupByApiIdSchema = z
@@ -135,7 +135,7 @@ export const GetGuestResponseSchema = z.object({
   guest: GuestSchema,
 })
 
-export type GetGuestResponse = z.infer<typeof GetGuestResponseSchema>
+export interface GetGuestResponse extends z.infer<typeof GetGuestResponseSchema> {}
 
 // Get guests params
 export const GetGuestsParamsSchema = PaginationParamsSchema.extend({
@@ -145,12 +145,12 @@ export const GetGuestsParamsSchema = PaginationParamsSchema.extend({
   sort_direction: SortDirectionSchema.optional(),
 })
 
-export type GetGuestsParams = z.infer<typeof GetGuestsParamsSchema>
+export interface GetGuestsParams extends z.infer<typeof GetGuestsParamsSchema> {}
 
 // Get guests response (paginated)
 export const GetGuestsResponseSchema = PaginatedResponseSchema(GuestSchema)
 
-export type GetGuestsResponse = z.infer<typeof GetGuestsResponseSchema>
+export interface GetGuestsResponse extends z.infer<typeof GetGuestsResponseSchema> {}
 
 // Create event request
 export const CreateEventRequestSchema = z.object({
@@ -169,14 +169,14 @@ export const CreateEventRequestSchema = z.object({
   event_type: z.string().optional(),
 })
 
-export type CreateEventRequest = z.infer<typeof CreateEventRequestSchema>
+export interface CreateEventRequest extends z.infer<typeof CreateEventRequestSchema> {}
 
 // Create event response
 export const CreateEventResponseSchema = z.object({
   event: EventSchema,
 })
 
-export type CreateEventResponse = z.infer<typeof CreateEventResponseSchema>
+export interface CreateEventResponse extends z.infer<typeof CreateEventResponseSchema> {}
 
 // Update event request
 export const UpdateEventRequestSchema = z.object({
@@ -195,14 +195,14 @@ export const UpdateEventRequestSchema = z.object({
   visibility: z.enum(['public', 'private']).optional(),
 })
 
-export type UpdateEventRequest = z.infer<typeof UpdateEventRequestSchema>
+export interface UpdateEventRequest extends z.infer<typeof UpdateEventRequestSchema> {}
 
 // Update event response
 export const UpdateEventResponseSchema = z.object({
   event: EventSchema,
 })
 
-export type UpdateEventResponse = z.infer<typeof UpdateEventResponseSchema>
+export interface UpdateEventResponse extends z.infer<typeof UpdateEventResponseSchema> {}
 
 // Update guest status request
 export const UpdateGuestStatusRequestSchema = z.object({
@@ -211,14 +211,16 @@ export const UpdateGuestStatusRequestSchema = z.object({
   status: GuestStatusSchema,
 })
 
-export type UpdateGuestStatusRequest = z.infer<typeof UpdateGuestStatusRequestSchema>
+export interface UpdateGuestStatusRequest extends z.infer<typeof UpdateGuestStatusRequestSchema> {}
 
 // Update guest status response
 export const UpdateGuestStatusResponseSchema = z.object({
   guest: GuestSchema,
 })
 
-export type UpdateGuestStatusResponse = z.infer<typeof UpdateGuestStatusResponseSchema>
+export interface UpdateGuestStatusResponse extends z.infer<
+  typeof UpdateGuestStatusResponseSchema
+> {}
 
 // Add guest input
 export const AddGuestInputSchema = z.object({
@@ -227,7 +229,7 @@ export const AddGuestInputSchema = z.object({
   phone_number: z.string().min(1).optional(),
 })
 
-export type AddGuestInput = z.infer<typeof AddGuestInputSchema>
+export interface AddGuestInput extends z.infer<typeof AddGuestInputSchema> {}
 
 // Add guests request
 export const AddGuestsRequestSchema = z.object({
@@ -236,14 +238,14 @@ export const AddGuestsRequestSchema = z.object({
   send_invite_email: z.boolean().optional(),
 })
 
-export type AddGuestsRequest = z.infer<typeof AddGuestsRequestSchema>
+export interface AddGuestsRequest extends z.infer<typeof AddGuestsRequestSchema> {}
 
 // Add guests response
 export const AddGuestsResponseSchema = z.object({
   guests: z.array(GuestSchema),
 })
 
-export type AddGuestsResponse = z.infer<typeof AddGuestsResponseSchema>
+export interface AddGuestsResponse extends z.infer<typeof AddGuestsResponseSchema> {}
 
 // Send invites request
 export const SendInvitesRequestSchema = z.object({
@@ -252,14 +254,14 @@ export const SendInvitesRequestSchema = z.object({
   send_sms: z.boolean().optional(),
 })
 
-export type SendInvitesRequest = z.infer<typeof SendInvitesRequestSchema>
+export interface SendInvitesRequest extends z.infer<typeof SendInvitesRequestSchema> {}
 
 // Send invites response
 export const SendInvitesResponseSchema = z.object({
   success: z.boolean(),
 })
 
-export type SendInvitesResponse = z.infer<typeof SendInvitesResponseSchema>
+export interface SendInvitesResponse extends z.infer<typeof SendInvitesResponseSchema> {}
 
 // Add host request
 export const AddHostRequestSchema = z.object({
@@ -269,14 +271,14 @@ export const AddHostRequestSchema = z.object({
   phone_number: z.string().min(1).optional(),
 })
 
-export type AddHostRequest = z.infer<typeof AddHostRequestSchema>
+export interface AddHostRequest extends z.infer<typeof AddHostRequestSchema> {}
 
 // Add host response
 export const AddHostResponseSchema = z.object({
   host: HostSchema,
 })
 
-export type AddHostResponse = z.infer<typeof AddHostResponseSchema>
+export interface AddHostResponse extends z.infer<typeof AddHostResponseSchema> {}
 
 // Coupon schema
 const CouponBaseSchema = z.object({
@@ -314,12 +316,12 @@ export const GetEventCouponsParamsSchema = PaginationParamsSchema.extend({
   event_api_id: LumaId.EventApiIdSchema,
 })
 
-export type GetEventCouponsParams = z.infer<typeof GetEventCouponsParamsSchema>
+export interface GetEventCouponsParams extends z.infer<typeof GetEventCouponsParamsSchema> {}
 
 // Get event coupons response
 export const GetEventCouponsResponseSchema = PaginatedResponseSchema(CouponSchema)
 
-export type GetEventCouponsResponse = z.infer<typeof GetEventCouponsResponseSchema>
+export interface GetEventCouponsResponse extends z.infer<typeof GetEventCouponsResponseSchema> {}
 
 // Create event coupon request
 const CreateEventCouponBaseSchema = z.object({
@@ -352,7 +354,9 @@ export const CreateEventCouponResponseSchema = z.object({
   coupon: CouponSchema,
 })
 
-export type CreateEventCouponResponse = z.infer<typeof CreateEventCouponResponseSchema>
+export interface CreateEventCouponResponse extends z.infer<
+  typeof CreateEventCouponResponseSchema
+> {}
 
 // Update event coupon request
 export const UpdateEventCouponRequestSchema = z.object({
@@ -362,14 +366,16 @@ export const UpdateEventCouponRequestSchema = z.object({
   valid_until: z.string().optional(),
 })
 
-export type UpdateEventCouponRequest = z.infer<typeof UpdateEventCouponRequestSchema>
+export interface UpdateEventCouponRequest extends z.infer<typeof UpdateEventCouponRequestSchema> {}
 
 // Update event coupon response
 export const UpdateEventCouponResponseSchema = z.object({
   coupon: CouponSchema,
 })
 
-export type UpdateEventCouponResponse = z.infer<typeof UpdateEventCouponResponseSchema>
+export interface UpdateEventCouponResponse extends z.infer<
+  typeof UpdateEventCouponResponseSchema
+> {}
 
 // Ticket type schema
 export const TicketTypeSchema = z.object({
@@ -392,7 +398,7 @@ export const TicketTypeSchema = z.object({
   updated_at: z.string().nullable().optional(),
 })
 
-export type TicketType = z.infer<typeof TicketTypeSchema>
+export interface TicketType extends z.infer<typeof TicketTypeSchema> {}
 
 // List ticket types params
 export const ListTicketTypesParamsSchema = z.object({
@@ -400,28 +406,28 @@ export const ListTicketTypesParamsSchema = z.object({
   include_hidden: z.boolean().optional(),
 })
 
-export type ListTicketTypesParams = z.infer<typeof ListTicketTypesParamsSchema>
+export interface ListTicketTypesParams extends z.infer<typeof ListTicketTypesParamsSchema> {}
 
 // List ticket types response
 export const ListTicketTypesResponseSchema = z.object({
   ticket_types: z.array(TicketTypeSchema),
 })
 
-export type ListTicketTypesResponse = z.infer<typeof ListTicketTypesResponseSchema>
+export interface ListTicketTypesResponse extends z.infer<typeof ListTicketTypesResponseSchema> {}
 
 // Get ticket type params
 export const GetTicketTypeParamsSchema = z.object({
   ticket_type_api_id: LumaId.TicketTypeApiIdSchema,
 })
 
-export type GetTicketTypeParams = z.infer<typeof GetTicketTypeParamsSchema>
+export interface GetTicketTypeParams extends z.infer<typeof GetTicketTypeParamsSchema> {}
 
 // Get ticket type response
 export const GetTicketTypeResponseSchema = z.object({
   ticket_type: TicketTypeSchema,
 })
 
-export type GetTicketTypeResponse = z.infer<typeof GetTicketTypeResponseSchema>
+export interface GetTicketTypeResponse extends z.infer<typeof GetTicketTypeResponseSchema> {}
 
 // Create ticket type request
 export const CreateTicketTypeRequestSchema = z.object({
@@ -438,14 +444,14 @@ export const CreateTicketTypeRequestSchema = z.object({
   sales_end_at: z.string().optional(),
 })
 
-export type CreateTicketTypeRequest = z.infer<typeof CreateTicketTypeRequestSchema>
+export interface CreateTicketTypeRequest extends z.infer<typeof CreateTicketTypeRequestSchema> {}
 
 // Create ticket type response
 export const CreateTicketTypeResponseSchema = z.object({
   ticket_type: TicketTypeSchema,
 })
 
-export type CreateTicketTypeResponse = z.infer<typeof CreateTicketTypeResponseSchema>
+export interface CreateTicketTypeResponse extends z.infer<typeof CreateTicketTypeResponseSchema> {}
 
 // Update ticket type request
 export const UpdateTicketTypeRequestSchema = z.object({
@@ -462,25 +468,25 @@ export const UpdateTicketTypeRequestSchema = z.object({
   sales_end_at: z.string().optional(),
 })
 
-export type UpdateTicketTypeRequest = z.infer<typeof UpdateTicketTypeRequestSchema>
+export interface UpdateTicketTypeRequest extends z.infer<typeof UpdateTicketTypeRequestSchema> {}
 
 // Update ticket type response
 export const UpdateTicketTypeResponseSchema = z.object({
   ticket_type: TicketTypeSchema,
 })
 
-export type UpdateTicketTypeResponse = z.infer<typeof UpdateTicketTypeResponseSchema>
+export interface UpdateTicketTypeResponse extends z.infer<typeof UpdateTicketTypeResponseSchema> {}
 
 // Delete ticket type request
 export const DeleteTicketTypeRequestSchema = z.object({
   ticket_type_api_id: LumaId.TicketTypeApiIdSchema,
 })
 
-export type DeleteTicketTypeRequest = z.infer<typeof DeleteTicketTypeRequestSchema>
+export interface DeleteTicketTypeRequest extends z.infer<typeof DeleteTicketTypeRequestSchema> {}
 
 // Delete ticket type response
 export const DeleteTicketTypeResponseSchema = z.object({
   success: z.boolean(),
 })
 
-export type DeleteTicketTypeResponse = z.infer<typeof DeleteTicketTypeResponseSchema>
+export interface DeleteTicketTypeResponse extends z.infer<typeof DeleteTicketTypeResponseSchema> {}

@@ -21,17 +21,21 @@ export const MembershipTierSchema = z.object({
   updated_at: z.string().nullable().optional(),
 })
 
-export type MembershipTier = z.infer<typeof MembershipTierSchema>
+export interface MembershipTier extends z.infer<typeof MembershipTierSchema> {}
 
 // List membership tiers params
 export const ListMembershipTiersParamsSchema = PaginationParamsSchema
 
-export type ListMembershipTiersParams = z.infer<typeof ListMembershipTiersParamsSchema>
+export interface ListMembershipTiersParams extends z.infer<
+  typeof ListMembershipTiersParamsSchema
+> {}
 
 // List membership tiers response
 export const ListMembershipTiersResponseSchema = PaginatedResponseSchema(MembershipTierSchema)
 
-export type ListMembershipTiersResponse = z.infer<typeof ListMembershipTiersResponseSchema>
+export interface ListMembershipTiersResponse extends z.infer<
+  typeof ListMembershipTiersResponseSchema
+> {}
 
 // Member schema
 export const MemberSchema = z.object({
@@ -47,7 +51,7 @@ export const MemberSchema = z.object({
   updated_at: z.string().nullable().optional(),
 })
 
-export type Member = z.infer<typeof MemberSchema>
+export interface Member extends z.infer<typeof MemberSchema> {}
 
 // Add member to tier request
 export const AddMemberToTierRequestSchema = z.object({
@@ -56,14 +60,14 @@ export const AddMemberToTierRequestSchema = z.object({
   name: z.string().optional(),
 })
 
-export type AddMemberToTierRequest = z.infer<typeof AddMemberToTierRequestSchema>
+export interface AddMemberToTierRequest extends z.infer<typeof AddMemberToTierRequestSchema> {}
 
 // Add member to tier response
 export const AddMemberToTierResponseSchema = z.object({
   member: MemberSchema,
 })
 
-export type AddMemberToTierResponse = z.infer<typeof AddMemberToTierResponseSchema>
+export interface AddMemberToTierResponse extends z.infer<typeof AddMemberToTierResponseSchema> {}
 
 // Update member status request
 const UpdateMemberStatusByUserApiIdSchema = z
@@ -94,4 +98,6 @@ export const UpdateMemberStatusResponseSchema = z.object({
   member: MemberSchema,
 })
 
-export type UpdateMemberStatusResponse = z.infer<typeof UpdateMemberStatusResponseSchema>
+export interface UpdateMemberStatusResponse extends z.infer<
+  typeof UpdateMemberStatusResponseSchema
+> {}

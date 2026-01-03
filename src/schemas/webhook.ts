@@ -21,31 +21,31 @@ export const WebhookSchema = z.object({
   updated_at: z.string().nullable().optional(),
 })
 
-export type Webhook = z.infer<typeof WebhookSchema>
+export interface Webhook extends z.infer<typeof WebhookSchema> {}
 
 // List webhooks params
 export const ListWebhooksParamsSchema = PaginationParamsSchema
 
-export type ListWebhooksParams = z.infer<typeof ListWebhooksParamsSchema>
+export interface ListWebhooksParams extends z.infer<typeof ListWebhooksParamsSchema> {}
 
 // List webhooks response
 export const ListWebhooksResponseSchema = PaginatedResponseSchema(WebhookSchema)
 
-export type ListWebhooksResponse = z.infer<typeof ListWebhooksResponseSchema>
+export interface ListWebhooksResponse extends z.infer<typeof ListWebhooksResponseSchema> {}
 
 // Get webhook params
 export const GetWebhookParamsSchema = z.object({
   webhook_api_id: LumaId.WebhookApiIdSchema,
 })
 
-export type GetWebhookParams = z.infer<typeof GetWebhookParamsSchema>
+export interface GetWebhookParams extends z.infer<typeof GetWebhookParamsSchema> {}
 
 // Get webhook response
 export const GetWebhookResponseSchema = z.object({
   webhook: WebhookSchema,
 })
 
-export type GetWebhookResponse = z.infer<typeof GetWebhookResponseSchema>
+export interface GetWebhookResponse extends z.infer<typeof GetWebhookResponseSchema> {}
 
 // Create webhook request
 export const CreateWebhookRequestSchema = z.object({
@@ -54,14 +54,14 @@ export const CreateWebhookRequestSchema = z.object({
   event_types: z.array(WebhookEventTypeSchema),
 })
 
-export type CreateWebhookRequest = z.infer<typeof CreateWebhookRequestSchema>
+export interface CreateWebhookRequest extends z.infer<typeof CreateWebhookRequestSchema> {}
 
 // Create webhook response
 export const CreateWebhookResponseSchema = z.object({
   webhook: WebhookSchema,
 })
 
-export type CreateWebhookResponse = z.infer<typeof CreateWebhookResponseSchema>
+export interface CreateWebhookResponse extends z.infer<typeof CreateWebhookResponseSchema> {}
 
 // Update webhook request
 export const UpdateWebhookRequestSchema = z.object({
@@ -71,28 +71,28 @@ export const UpdateWebhookRequestSchema = z.object({
   status: WebhookStatusSchema.optional(),
 })
 
-export type UpdateWebhookRequest = z.infer<typeof UpdateWebhookRequestSchema>
+export interface UpdateWebhookRequest extends z.infer<typeof UpdateWebhookRequestSchema> {}
 
 // Update webhook response
 export const UpdateWebhookResponseSchema = z.object({
   webhook: WebhookSchema,
 })
 
-export type UpdateWebhookResponse = z.infer<typeof UpdateWebhookResponseSchema>
+export interface UpdateWebhookResponse extends z.infer<typeof UpdateWebhookResponseSchema> {}
 
 // Delete webhook request
 export const DeleteWebhookRequestSchema = z.object({
   webhook_api_id: LumaId.WebhookApiIdSchema,
 })
 
-export type DeleteWebhookRequest = z.infer<typeof DeleteWebhookRequestSchema>
+export interface DeleteWebhookRequest extends z.infer<typeof DeleteWebhookRequestSchema> {}
 
 // Delete webhook response
 export const DeleteWebhookResponseSchema = z.object({
   success: z.boolean(),
 })
 
-export type DeleteWebhookResponse = z.infer<typeof DeleteWebhookResponseSchema>
+export interface DeleteWebhookResponse extends z.infer<typeof DeleteWebhookResponseSchema> {}
 
 // Webhook payload base schema
 export const WebhookPayloadBaseSchema = z.object({
@@ -108,7 +108,7 @@ export const EventCreatedPayloadSchema = WebhookPayloadBaseSchema.extend({
   }),
 })
 
-export type EventCreatedPayload = z.infer<typeof EventCreatedPayloadSchema>
+export interface EventCreatedPayload extends z.infer<typeof EventCreatedPayloadSchema> {}
 
 // Event updated webhook payload
 export const EventUpdatedPayloadSchema = WebhookPayloadBaseSchema.extend({
@@ -118,7 +118,7 @@ export const EventUpdatedPayloadSchema = WebhookPayloadBaseSchema.extend({
   }),
 })
 
-export type EventUpdatedPayload = z.infer<typeof EventUpdatedPayloadSchema>
+export interface EventUpdatedPayload extends z.infer<typeof EventUpdatedPayloadSchema> {}
 
 // Guest registered webhook payload
 export const GuestRegisteredPayloadSchema = WebhookPayloadBaseSchema.extend({
@@ -129,7 +129,7 @@ export const GuestRegisteredPayloadSchema = WebhookPayloadBaseSchema.extend({
   }),
 })
 
-export type GuestRegisteredPayload = z.infer<typeof GuestRegisteredPayloadSchema>
+export interface GuestRegisteredPayload extends z.infer<typeof GuestRegisteredPayloadSchema> {}
 
 // Guest updated webhook payload
 export const GuestUpdatedPayloadSchema = WebhookPayloadBaseSchema.extend({
@@ -140,7 +140,7 @@ export const GuestUpdatedPayloadSchema = WebhookPayloadBaseSchema.extend({
   }),
 })
 
-export type GuestUpdatedPayload = z.infer<typeof GuestUpdatedPayloadSchema>
+export interface GuestUpdatedPayload extends z.infer<typeof GuestUpdatedPayloadSchema> {}
 
 // Ticket registered webhook payload
 export const TicketRegisteredPayloadSchema = WebhookPayloadBaseSchema.extend({
@@ -152,7 +152,7 @@ export const TicketRegisteredPayloadSchema = WebhookPayloadBaseSchema.extend({
   }),
 })
 
-export type TicketRegisteredPayload = z.infer<typeof TicketRegisteredPayloadSchema>
+export interface TicketRegisteredPayload extends z.infer<typeof TicketRegisteredPayloadSchema> {}
 
 // Calendar event added webhook payload
 export const CalendarEventAddedPayloadSchema = WebhookPayloadBaseSchema.extend({
@@ -162,7 +162,9 @@ export const CalendarEventAddedPayloadSchema = WebhookPayloadBaseSchema.extend({
   }),
 })
 
-export type CalendarEventAddedPayload = z.infer<typeof CalendarEventAddedPayloadSchema>
+export interface CalendarEventAddedPayload extends z.infer<
+  typeof CalendarEventAddedPayloadSchema
+> {}
 
 // Calendar person subscribed webhook payload
 export const CalendarPersonSubscribedPayloadSchema = WebhookPayloadBaseSchema.extend({
@@ -172,7 +174,9 @@ export const CalendarPersonSubscribedPayloadSchema = WebhookPayloadBaseSchema.ex
   }),
 })
 
-export type CalendarPersonSubscribedPayload = z.infer<typeof CalendarPersonSubscribedPayloadSchema>
+export interface CalendarPersonSubscribedPayload extends z.infer<
+  typeof CalendarPersonSubscribedPayloadSchema
+> {}
 
 // Union of all webhook payloads
 export const WebhookPayloadSchema = z.discriminatedUnion('type', [

@@ -33,7 +33,7 @@ export const GeoAddressJsonSchema = z.object({
   longitude: z.number().optional(),
 })
 
-export type GeoAddressJson = z.infer<typeof GeoAddressJsonSchema>
+export interface GeoAddressJson extends z.infer<typeof GeoAddressJsonSchema> {}
 
 // Social links schemas
 export const SocialLinksSchema = z.object({
@@ -44,7 +44,7 @@ export const SocialLinksSchema = z.object({
   website: z.string().nullable().optional(),
 })
 
-export type SocialLinks = z.infer<typeof SocialLinksSchema>
+export interface SocialLinks extends z.infer<typeof SocialLinksSchema> {}
 
 // Theme schemas
 export const ThemeSchema = z.object({
@@ -52,7 +52,7 @@ export const ThemeSchema = z.object({
   font: z.string().nullable().optional(),
 })
 
-export type Theme = z.infer<typeof ThemeSchema>
+export interface Theme extends z.infer<typeof ThemeSchema> {}
 
 // Price schema
 export const PriceSchema = z.object({
@@ -60,7 +60,7 @@ export const PriceSchema = z.object({
   currency: z.string(),
 })
 
-export type Price = z.infer<typeof PriceSchema>
+export interface Price extends z.infer<typeof PriceSchema> {}
 
 // Common response wrapper
 export const ApiResponseSchema = <T extends z.ZodType>(dataSchema: T) =>
@@ -164,4 +164,4 @@ export const SuccessResponseSchema = z.object({
   success: z.boolean(),
 })
 
-export type SuccessResponse = z.infer<typeof SuccessResponseSchema>
+export interface SuccessResponse extends z.infer<typeof SuccessResponseSchema> {}

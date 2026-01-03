@@ -13,7 +13,7 @@ import { LumaId } from './ids.js'
 export const WebhookSchema = z.object({
   api_id: LumaId.WebhookApiIdSchema,
   calendar_id: LumaId.CalendarIdSchema.nullable().optional(),
-  url: z.string(),
+  url: z.string().url({ message: 'Invalid URL' }),
   event_types: z.array(WebhookEventTypeSchema),
   status: WebhookStatusSchema.nullable().optional(),
   secret: z.string().nullable().optional(),
@@ -50,7 +50,7 @@ export type GetWebhookResponse = z.infer<typeof GetWebhookResponseSchema>
 // Create webhook request
 export const CreateWebhookRequestSchema = z.object({
   calendar_id: LumaId.CalendarIdSchema,
-  url: z.string(),
+  url: z.string().url({ message: 'Invalid URL' }),
   event_types: z.array(WebhookEventTypeSchema),
 })
 
@@ -66,7 +66,7 @@ export type CreateWebhookResponse = z.infer<typeof CreateWebhookResponseSchema>
 // Update webhook request
 export const UpdateWebhookRequestSchema = z.object({
   webhook_api_id: LumaId.WebhookApiIdSchema,
-  url: z.string().optional(),
+  url: z.string().url({ message: 'Invalid URL' }).optional(),
   event_types: z.array(WebhookEventTypeSchema).optional(),
   status: WebhookStatusSchema.optional(),
 })

@@ -92,12 +92,13 @@ async function handleResponse<T>(response: Response, schema: ZodType<T>): Promis
       case 404:
         throw new LumaNotFoundError(message, data)
       case 429: {
-        const retryAfter = response.headers.get('retry-after')
-        throw new LumaRateLimitError(
-          message,
-          retryAfter ? parseInt(retryAfter, 10) : undefined,
-          data
-        )
+        const retryAfterHeader = response.headers.get('retry-after')
+        let retryAfter: number | undefined
+        if (retryAfterHeader) {
+          const parsed = parseInt(retryAfterHeader, 10)
+          retryAfter = Number.isFinite(parsed) ? parsed : undefined
+        }
+        throw new LumaRateLimitError(message, retryAfter, data)
       }
       default:
         throw new LumaApiError(message, response.status, data)

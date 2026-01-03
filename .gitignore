@@ -1,0 +1,15 @@
+/node_modules
+/reports
+/coverage
+/docs
+
+npm-debug.log*
+
+*.log
+
+.DS_Store
+/.idea
+/dist
+*.tgz
+/attw*
+.npm-cache

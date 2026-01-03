@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(yarn test)",
+      "Bash(yarn pack --dry-run)",
+      "Bash(yarn build)",
+      "Bash(yarn exec attw:*)",
+      "Bash(npm pack:*)",
+      "Bash(npx publint)",
+      "Bash(npx publint:*)",
+      "Bash(npx attw --pack .)",
+      "Bash(cat:*)",
+      "Bash(npm info:*)",
+      "WebSearch",
+      "Bash(yarn test:*)",
+      "WebFetch(domain:codilime.com)",
+      "WebFetch(domain:www.testim.io)",
+      "WebFetch(domain:www.angularminds.com)",
+      "Bash(find:*)",
+      "Bash(tree:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

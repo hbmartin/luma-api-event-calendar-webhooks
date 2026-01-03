@@ -1,4 +1,8 @@
-# Working Guide
+# Luma API with Events and Webhooks
+
+Search and browse https://docs.luma.com/ for information.
+
+## Working Guide
 - After adding any code or functionality, write thorough unit tests (using vitest) and check coverage.
 - After making any changes always execute `pnpm format && pnpm build && pnpm test` to verify
 - Fix any pnpm format issues (even if they are unrelated)
@@ -6,7 +10,7 @@
 - One file = one purpose (no 800-line “service.ts”).
 - No “utils” without a namespace (e.g., shared/transport/httpErrors.ts, not utils.ts).
 
-# TypeScript
+## TypeScript
 - **Type everything**: params, returns, config objects, and external integrations; avoid `any` 
 - **Use interfaces**: for complex types and objects, including ports and DTOs
 - **Use namespaces**: for organizing related types and functions

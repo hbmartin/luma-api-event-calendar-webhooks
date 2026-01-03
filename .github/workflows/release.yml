@@ -16,36 +16,34 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v4
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22.x
-          cache: 'yarn'
-          cache-dependency-path: yarn.lock
+          cache: 'pnpm'
           registry-url: 'https://registry.npmjs.org'
-      - name: Upgrade npm to latest
-        run: |
-          npm -v
-          npm config set prefix ~/.local
-          export PATH="$HOME/.local/bin:$PATH"
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-          npm install -g npm@latest np
-          hash -r
-          npm -v
-      - name: Enable Corepack
-        run: corepack enable
+
       - name: Install Dependencies
-        run: yarn install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
+
       - name: Run tests
-        run: yarn test
+        run: pnpm test
+
       - name: Build package
-        run: yarn build
+        run: pnpm build
+
       - name: Verify publish artifacts
         run: npm pack
+
       - name: Verify package exports
         run: npx publint --pack npm
+
       - name: Check types compatibility
         run: npx attw --pack . --profile node16
+
       - name: Publish to NPM
         run: |
           npm -v
@@ -58,3 +56,5 @@ jobs:
 
           echo "Publishing with tag: $TAG"
           npm publish --tag $TAG --access public --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

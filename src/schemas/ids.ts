@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-const createIdSchema = <TBrand extends string>() => z.string().min(1).brand<TBrand>()
+const createIdSchema = <TBrand extends string>() => z.string().trim().min(1).brand<TBrand>()
 
 export namespace LumaId {
   export const CalendarIdSchema = createIdSchema<'CalendarId'>()

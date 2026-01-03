@@ -11,8 +11,8 @@ export class LumaError extends Error {
   public readonly statusCode?: number
   public readonly code?: string
 
-  constructor(message: string, statusCode?: number, code?: string) {
-    super(message)
+  constructor(message: string, statusCode?: number, code?: string, options?: ErrorOptions) {
+    super(message, options)
     this.name = 'LumaError'
     this.statusCode = statusCode
     this.code = code
@@ -52,12 +52,9 @@ export class LumaApiError extends LumaError {
 }
 
 export class LumaNetworkError extends LumaError {
-  public readonly cause?: Error
-
   constructor(message: string, cause?: Error) {
-    super(message, undefined, 'NETWORK_ERROR')
+    super(message, undefined, 'NETWORK_ERROR', { cause })
     this.name = 'LumaNetworkError'
-    this.cause = cause
     Object.setPrototypeOf(this, LumaNetworkError.prototype)
   }
 }

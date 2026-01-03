@@ -74,7 +74,7 @@ export function parseRetryAfter(header: string | null): number | undefined {
   }
 
   // Try parsing as HTTP-date (e.g., "Wed, 21 Oct 2015 07:28:00 GMT")
-  const dateValue = Date.parse(header)
+  const dateValue = Date.parse(trimmed)
   if (Number.isFinite(dateValue)) {
     const delayMs = dateValue - Date.now()
     const delaySeconds = Math.ceil(delayMs / 1000)

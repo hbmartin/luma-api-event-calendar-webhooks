@@ -12,7 +12,7 @@
 			"Bash(cat:*)",
 			"Bash(npm info:*)",
 			"WebSearch",
-			"WebFetch(docs.luma.com)",
+			"WebFetch(domain:docs.luma.com)",
 			"Bash(find:*)",
 			"Bash(tree:*)",
 			"Bash(pnpm test:*)",

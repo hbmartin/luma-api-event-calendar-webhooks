@@ -1,6 +1,6 @@
 // Main client export
-export { LumaClient, BASE_URL } from "./client/index.js";
-export type { LumaClientOptions } from "./client/index.js";
+export { LumaClient, BASE_URL } from './client/index.js'
+export type { LumaClientOptions } from './client/index.js'
 
 // Error exports
 export {
@@ -11,11 +11,12 @@ export {
   LumaRateLimitError,
   LumaAuthenticationError,
   LumaNotFoundError,
-} from "./errors.js";
-export type { LumaErrorDetails } from "./errors.js";
+} from './errors.js'
+export type { LumaErrorDetails } from './errors.js'
 
 // Schema exports - Common types
 export {
+  Pagination,
   PaginationParamsSchema,
   GeoAddressJsonSchema,
   ApprovalStatusSchema,
@@ -31,7 +32,8 @@ export {
   TagColorSchema,
   MembershipStatusSchema,
   SuccessResponseSchema,
-} from "./schemas/index.js";
+  LumaId,
+} from './schemas/index.js'
 
 export type {
   PaginationParams,
@@ -49,35 +51,25 @@ export type {
   TagColor,
   MembershipStatus,
   SuccessResponse,
-} from "./schemas/index.js";
+} from './schemas/index.js'
 
 // Schema exports - User
-export { UserSchema, GetSelfResponseSchema } from "./schemas/index.js";
-export type { User, GetSelfResponse } from "./schemas/index.js";
+export { UserSchema, GetSelfResponseSchema } from './schemas/index.js'
+export type { User, GetSelfResponse } from './schemas/index.js'
 
 // Schema exports - Entity
 export {
   LookupEntityParamsSchema,
   EntitySchema,
   LookupEntityResponseSchema,
-} from "./schemas/index.js";
+} from './schemas/index.js'
 
-export type {
-  LookupEntityParams,
-  Entity,
-  LookupEntityResponse,
-} from "./schemas/index.js";
+export type { LookupEntityParams, Entity, LookupEntityResponse } from './schemas/index.js'
 
 // Schema exports - Images
-export {
-  CreateUploadUrlRequestSchema,
-  CreateUploadUrlResponseSchema,
-} from "./schemas/index.js";
+export { CreateUploadUrlRequestSchema, CreateUploadUrlResponseSchema } from './schemas/index.js'
 
-export type {
-  CreateUploadUrlRequest,
-  CreateUploadUrlResponse,
-} from "./schemas/index.js";
+export type { CreateUploadUrlRequest, CreateUploadUrlResponse } from './schemas/index.js'
 
 // Schema exports - Event
 export {
@@ -121,7 +113,7 @@ export {
   UpdateTicketTypeResponseSchema,
   DeleteTicketTypeRequestSchema,
   DeleteTicketTypeResponseSchema,
-} from "./schemas/index.js";
+} from './schemas/index.js'
 
 export type {
   Host,
@@ -164,7 +156,7 @@ export type {
   UpdateTicketTypeResponse,
   DeleteTicketTypeRequest,
   DeleteTicketTypeResponse,
-} from "./schemas/index.js";
+} from './schemas/index.js'
 
 // Schema exports - Calendar
 export {
@@ -200,7 +192,7 @@ export {
   ApplyPersonTagResponseSchema,
   RemovePersonTagRequestSchema,
   RemovePersonTagResponseSchema,
-} from "./schemas/index.js";
+} from './schemas/index.js'
 
 export type {
   CalendarEventEntry,
@@ -235,7 +227,7 @@ export type {
   ApplyPersonTagResponse,
   RemovePersonTagRequest,
   RemovePersonTagResponse,
-} from "./schemas/index.js";
+} from './schemas/index.js'
 
 // Schema exports - Membership
 export {
@@ -247,7 +239,7 @@ export {
   AddMemberToTierResponseSchema,
   UpdateMemberStatusRequestSchema,
   UpdateMemberStatusResponseSchema,
-} from "./schemas/index.js";
+} from './schemas/index.js'
 
 export type {
   MembershipTier,
@@ -258,7 +250,7 @@ export type {
   AddMemberToTierResponse,
   UpdateMemberStatusRequest,
   UpdateMemberStatusResponse,
-} from "./schemas/index.js";
+} from './schemas/index.js'
 
 // Schema exports - Webhook
 export {
@@ -282,7 +274,7 @@ export {
   CalendarEventAddedPayloadSchema,
   CalendarPersonSubscribedPayloadSchema,
   parseWebhookPayload,
-} from "./schemas/index.js";
+} from './schemas/index.js'
 
 export type {
   Webhook,
@@ -304,4 +296,4 @@ export type {
   TicketRegisteredPayload,
   CalendarEventAddedPayload,
   CalendarPersonSubscribedPayload,
-} from "./schemas/index.js";
+} from './schemas/index.js'

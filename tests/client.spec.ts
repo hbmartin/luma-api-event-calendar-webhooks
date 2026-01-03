@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { LumaClient, BASE_URL } from "../src/client/index.js";
+import { LumaClient, BASE_URL, parseRetryAfter } from "../src/client/index.js";
 import {
   LumaApiError,
   LumaAuthenticationError,
@@ -412,6 +412,153 @@ describe("LumaClient", () => {
           "Content-Type": "application/json",
         })
       );
+    });
+  });
+});
+
+describe("parseRetryAfter", () => {
+  describe("numeric seconds format", () => {
+    it("should parse valid numeric seconds", () => {
+      expect(parseRetryAfter("60")).toBe(60);
+      expect(parseRetryAfter("120")).toBe(120);
+      expect(parseRetryAfter("0")).toBe(0);
+      expect(parseRetryAfter("3600")).toBe(3600);
+    });
+
+    it("should return undefined for negative numbers", () => {
+      expect(parseRetryAfter("-1")).toBeUndefined();
+      expect(parseRetryAfter("-60")).toBeUndefined();
+    });
+
+    it("should return undefined for non-numeric strings", () => {
+      expect(parseRetryAfter("abc")).toBeUndefined();
+      expect(parseRetryAfter("")).toBeUndefined();
+      expect(parseRetryAfter("60abc")).toBeUndefined();
+    });
+  });
+
+  describe("HTTP-date format", () => {
+    it("should parse valid HTTP-date and return seconds until that time", () => {
+      // Create a date 120 seconds in the future
+      const futureDate = new Date(Date.now() + 120000);
+      const httpDate = futureDate.toUTCString();
+
+      const result = parseRetryAfter(httpDate);
+      expect(result).toBeDefined();
+      // Allow some tolerance for test execution time
+      expect(result).toBeGreaterThanOrEqual(119);
+      expect(result).toBeLessThanOrEqual(121);
+    });
+
+    it("should return 0 for dates in the past", () => {
+      const pastDate = new Date(Date.now() - 60000);
+      const httpDate = pastDate.toUTCString();
+
+      expect(parseRetryAfter(httpDate)).toBe(0);
+    });
+
+    it("should handle standard HTTP-date format", () => {
+      // Create a date 60 seconds in the future
+      const futureDate = new Date(Date.now() + 60000);
+      const httpDate = futureDate.toUTCString(); // e.g., "Wed, 21 Oct 2015 07:28:00 GMT"
+
+      const result = parseRetryAfter(httpDate);
+      expect(result).toBeDefined();
+      expect(result).toBeGreaterThanOrEqual(59);
+      expect(result).toBeLessThanOrEqual(61);
+    });
+  });
+
+  describe("null and invalid input", () => {
+    it("should return undefined for null", () => {
+      expect(parseRetryAfter(null)).toBeUndefined();
+    });
+
+    it("should return undefined for invalid date strings", () => {
+      expect(parseRetryAfter("not-a-date")).toBeUndefined();
+      expect(parseRetryAfter("2024-13-45")).toBeUndefined();
+    });
+  });
+
+  describe("integration with rate limit error", () => {
+    it("should handle HTTP-date Retry-After header in 429 response", async () => {
+      const localMockFetch = vi.fn();
+      global.fetch = localMockFetch;
+      const client = new LumaClient({ apiKey: "test-key" });
+      const futureDate = new Date(Date.now() + 30000);
+
+      localMockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 429,
+        headers: new Headers({
+          "content-type": "application/json",
+          "retry-after": futureDate.toUTCString(),
+        }),
+        json: async () => ({ message: "Rate limit exceeded" }),
+      });
+
+      try {
+        await client.getSelf();
+        expect.fail("Should have thrown");
+      } catch (error) {
+        expect(error).toBeInstanceOf(LumaRateLimitError);
+        if (error instanceof LumaRateLimitError) {
+          expect(error.retryAfter).toBeDefined();
+          expect(error.retryAfter).toBeGreaterThanOrEqual(29);
+          expect(error.retryAfter).toBeLessThanOrEqual(31);
+        }
+      }
+    });
+
+    it("should handle missing Retry-After header", async () => {
+      const localMockFetch = vi.fn();
+      global.fetch = localMockFetch;
+      const client = new LumaClient({ apiKey: "test-key" });
+
+      localMockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 429,
+        headers: new Headers({
+          "content-type": "application/json",
+        }),
+        json: async () => ({ message: "Rate limit exceeded" }),
+      });
+
+      try {
+        await client.getSelf();
+        expect.fail("Should have thrown");
+      } catch (error) {
+        expect(error).toBeInstanceOf(LumaRateLimitError);
+        if (error instanceof LumaRateLimitError) {
+          expect(error.retryAfter).toBeUndefined();
+        }
+      }
+    });
+
+    it("should handle invalid Retry-After header", async () => {
+      const localMockFetch = vi.fn();
+      global.fetch = localMockFetch;
+      const client = new LumaClient({ apiKey: "test-key" });
+
+      localMockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 429,
+        headers: new Headers({
+          "content-type": "application/json",
+          "retry-after": "invalid-value",
+        }),
+        json: async () => ({ message: "Rate limit exceeded" }),
+      });
+
+      try {
+        await client.getSelf();
+        expect.fail("Should have thrown");
+      } catch (error) {
+        expect(error).toBeInstanceOf(LumaRateLimitError);
+        if (error instanceof LumaRateLimitError) {
+          expect(error.retryAfter).toBeUndefined();
+        }
+      }
     });
   });
 });

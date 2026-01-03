@@ -51,6 +51,39 @@ const normalizeQueryKey = (key: string): string => {
   return key
 }
 
+/**
+ * Parses a Retry-After header value, supporting both numeric seconds and HTTP-date formats.
+ * @param header - The Retry-After header value
+ * @returns The number of seconds to wait, or undefined if the header is invalid
+ */
+export function parseRetryAfter(header: string | null): number | undefined {
+  if (!header) {
+    return undefined
+  }
+
+  const trimmed = header.trim()
+
+  // Check if it looks like a numeric value (digits only, optionally with leading sign)
+  if (/^-?\d+$/.test(trimmed)) {
+    const numericValue = parseInt(trimmed, 10)
+    if (Number.isFinite(numericValue) && numericValue >= 0) {
+      return numericValue
+    }
+    // Negative numbers are invalid for Retry-After
+    return undefined
+  }
+
+  // Try parsing as HTTP-date (e.g., "Wed, 21 Oct 2015 07:28:00 GMT")
+  const dateValue = Date.parse(header)
+  if (Number.isFinite(dateValue)) {
+    const delayMs = dateValue - Date.now()
+    const delaySeconds = Math.ceil(delayMs / 1000)
+    return delaySeconds > 0 ? delaySeconds : 0
+  }
+
+  return undefined
+}
+
 function buildUrl(
   baseUrl: string,
   path: string,
@@ -92,12 +125,7 @@ async function handleResponse<T>(response: Response, schema: ZodType<T>): Promis
       case 404:
         throw new LumaNotFoundError(message, data)
       case 429: {
-        const retryAfterHeader = response.headers.get('retry-after')
-        let retryAfter: number | undefined
-        if (retryAfterHeader) {
-          const parsed = parseInt(retryAfterHeader, 10)
-          retryAfter = Number.isFinite(parsed) ? parsed : undefined
-        }
+        const retryAfter = parseRetryAfter(response.headers.get('retry-after'))
         throw new LumaRateLimitError(message, retryAfter, data)
       }
       default:

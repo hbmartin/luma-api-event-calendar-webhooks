@@ -24,3 +24,14 @@ Search and browse https://docs.luma.com/ for information.
 - **Separate Pure Logic from Side Effects**: Functions that return void hide meaning from the compiler.
   - Prefer Pure functions with explicit inputs/outputs.
 - **Error handling**: Throw domain/application errors (e.g. `DomainError`, `NotFoundError`), then map them to HTTP responses in a global error handler.
+-- **Use a single params object for a function argument when there are optional arguments or arguments of the same type**: this enables safe, name based destructuring.
+
+## When to Stop and Ask the User for Guidance
+
+You should stop any time there is any ambiguity in the task specification or any lack of clarity on how to accomplish the task and ask the user for guidance.
+
+Especially consider conceptual questions like:
+- Is this introducing a new idea, or just expressing an existing one in a new place?
+- Does this feel like it belongs close to the surface (API, UX, etc) or deep inside the system?
+- If this thing I’m planning to introduce or change (whatever it is) spreads, will that be a good thing or a liability?
+- What happens if we’re wrong and need to undo it? What’s the blast radius?

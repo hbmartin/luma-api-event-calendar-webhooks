@@ -1,45 +1,9 @@
 /**
- * Calendar namespace - bundles CalendarResource with calendar-related schemas
+ * Calendar namespace - bundles CalendarResource with calendar-related types
  */
 
 // Re-export the resource class
 export { CalendarResource } from '../client/resources/calendar.js'
-
-// Re-export calendar schemas
-export {
-  CalendarEventEntrySchema,
-  ListCalendarEventsParamsSchema,
-  ListCalendarEventsResponseSchema,
-  PersonTagSchema,
-  ListPersonTagsParamsSchema,
-  ListPersonTagsResponseSchema,
-  LookupCalendarEventParamsSchema,
-  LookupCalendarEventResponseSchema,
-  PersonSchema,
-  ListPeopleParamsSchema,
-  ListPeopleResponseSchema,
-  ListCalendarCouponsParamsSchema,
-  ListCalendarCouponsResponseSchema,
-  CreateCalendarCouponRequestSchema,
-  CreateCalendarCouponResponseSchema,
-  UpdateCalendarCouponRequestSchema,
-  UpdateCalendarCouponResponseSchema,
-  ImportPersonInputSchema,
-  ImportPeopleRequestSchema,
-  ImportPeopleResponseSchema,
-  CreatePersonTagRequestSchema,
-  CreatePersonTagResponseSchema,
-  UpdatePersonTagRequestSchema,
-  UpdatePersonTagResponseSchema,
-  DeletePersonTagRequestSchema,
-  DeletePersonTagResponseSchema,
-  AddEventToCalendarRequestSchema,
-  AddEventToCalendarResponseSchema,
-  ApplyPersonTagRequestSchema,
-  ApplyPersonTagResponseSchema,
-  RemovePersonTagRequestSchema,
-  RemovePersonTagResponseSchema,
-} from '../schemas/calendar.js'
 
 // Re-export calendar types
 export type {

@@ -1,0 +1,78 @@
+/**
+ * Calendar namespace - bundles CalendarResource with calendar-related schemas
+ */
+
+// Re-export the resource class
+export { CalendarResource } from '../client/resources/calendar.js'
+
+// Re-export calendar schemas
+export {
+  CalendarEventEntrySchema,
+  ListCalendarEventsParamsSchema,
+  ListCalendarEventsResponseSchema,
+  PersonTagSchema,
+  ListPersonTagsParamsSchema,
+  ListPersonTagsResponseSchema,
+  LookupCalendarEventParamsSchema,
+  LookupCalendarEventResponseSchema,
+  PersonSchema,
+  ListPeopleParamsSchema,
+  ListPeopleResponseSchema,
+  ListCalendarCouponsParamsSchema,
+  ListCalendarCouponsResponseSchema,
+  CreateCalendarCouponRequestSchema,
+  CreateCalendarCouponResponseSchema,
+  UpdateCalendarCouponRequestSchema,
+  UpdateCalendarCouponResponseSchema,
+  ImportPersonInputSchema,
+  ImportPeopleRequestSchema,
+  ImportPeopleResponseSchema,
+  CreatePersonTagRequestSchema,
+  CreatePersonTagResponseSchema,
+  UpdatePersonTagRequestSchema,
+  UpdatePersonTagResponseSchema,
+  DeletePersonTagRequestSchema,
+  DeletePersonTagResponseSchema,
+  AddEventToCalendarRequestSchema,
+  AddEventToCalendarResponseSchema,
+  ApplyPersonTagRequestSchema,
+  ApplyPersonTagResponseSchema,
+  RemovePersonTagRequestSchema,
+  RemovePersonTagResponseSchema,
+} from '../schemas/calendar.js'
+
+// Re-export calendar types
+export type {
+  CalendarEventEntry,
+  ListCalendarEventsParams,
+  ListCalendarEventsResponse,
+  PersonTag,
+  ListPersonTagsParams,
+  ListPersonTagsResponse,
+  LookupCalendarEventParams,
+  LookupCalendarEventResponse,
+  Person,
+  ListPeopleParams,
+  ListPeopleResponse,
+  ListCalendarCouponsParams,
+  ListCalendarCouponsResponse,
+  CreateCalendarCouponRequest,
+  CreateCalendarCouponResponse,
+  UpdateCalendarCouponRequest,
+  UpdateCalendarCouponResponse,
+  ImportPersonInput,
+  ImportPeopleRequest,
+  ImportPeopleResponse,
+  CreatePersonTagRequest,
+  CreatePersonTagResponse,
+  UpdatePersonTagRequest,
+  UpdatePersonTagResponse,
+  DeletePersonTagRequest,
+  DeletePersonTagResponse,
+  AddEventToCalendarRequest,
+  AddEventToCalendarResponse,
+  ApplyPersonTagRequest,
+  ApplyPersonTagResponse,
+  RemovePersonTagRequest,
+  RemovePersonTagResponse,
+} from '../schemas/calendar.js'

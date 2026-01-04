@@ -8,15 +8,6 @@ export type {
   FetcherConfig,
 } from './client/index.js'
 
-// Resource exports
-export { UserResource } from './client/resources/user.js'
-export { EntityResource } from './client/resources/entity.js'
-export { ImagesResource } from './client/resources/images.js'
-export { EventResource } from './client/resources/event.js'
-export { CalendarResource } from './client/resources/calendar.js'
-export { MembershipResource } from './client/resources/membership.js'
-export { WebhookResource } from './client/resources/webhook.js'
-
 // Error exports
 export {
   LumaError,
@@ -29,5 +20,15 @@ export {
 } from './errors.js'
 export type { LumaErrorDetails } from './errors.js'
 
-// Schema exports
+// Resource namespace exports - each namespace bundles a resource class with its schemas
+export * as User from './namespaces/user.js'
+export * as Event from './namespaces/event.js'
+export * as Calendar from './namespaces/calendar.js'
+export * as Entity from './namespaces/entity.js'
+export * as Images from './namespaces/images.js'
+export * as Membership from './namespaces/membership.js'
+export * as Webhook from './namespaces/webhook.js'
+export * as Common from './namespaces/common.js'
+
+// Legacy: Keep Schemas export for backwards compatibility
 export * as Schemas from './schemas/index.js'

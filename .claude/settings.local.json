@@ -1,24 +1,26 @@
 {
-	"permissions": {
-		"allow": [
-			"Bash(pnpm test)",
-			"Bash(pnpm pack --dry-run)",
-			"Bash(pnpm build)",
-			"Bash(pnpm exec attw:*)",
-			"Bash(npm pack:*)",
-			"Bash(npx publint)",
-			"Bash(npx publint:*)",
-			"Bash(npx attw --pack .)",
-			"Bash(cat:*)",
-			"Bash(npm info:*)",
-			"WebSearch",
-			"WebFetch(domain:docs.luma.com)",
-			"Bash(find:*)",
-			"Bash(tree:*)",
-			"Bash(pnpm test:*)",
-			"Bash(pnpm build:*)"
-		],
-		"deny": [],
-		"ask": []
-	}
+  "permissions": {
+    "allow": [
+      "Bash(pnpm test)",
+      "Bash(pnpm pack --dry-run)",
+      "Bash(pnpm build)",
+      "Bash(pnpm exec attw:*)",
+      "Bash(npm pack:*)",
+      "Bash(npx publint)",
+      "Bash(npx publint:*)",
+      "Bash(npx attw --pack .)",
+      "Bash(cat:*)",
+      "Bash(npm info:*)",
+      "WebSearch",
+      "WebFetch(domain:docs.luma.com)",
+      "Bash(find:*)",
+      "Bash(tree:*)",
+      "Bash(pnpm test:*)",
+      "Bash(pnpm build:*)",
+      "Bash(pnpm format:*)",
+      "Bash(wc:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
 }

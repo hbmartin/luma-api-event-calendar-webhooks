@@ -69,6 +69,10 @@ const getTrimmedHeader = (header: string | null): string | undefined => {
 const isNumericRetryAfter = (value: string): boolean => /^-?\d+$/.test(value)
 
 const parseNumericRetryAfter = (value: string): number | undefined => {
+  if (!isNumericRetryAfter(value)) {
+    return undefined
+  }
+
   const numericValue = Number.parseInt(value, 10)
   if (!Number.isFinite(numericValue) || numericValue < 0) {
     return undefined
@@ -102,16 +106,25 @@ const applyQueryParams = (url: URL, query: QueryParams): void => {
   }
 }
 
+const parseJsonSafe = (text: string): unknown => {
+  try {
+    return JSON.parse(text)
+  } catch {
+    return null
+  }
+}
+
 const parseResponsePayload = async (response: Response): Promise<unknown> => {
   const text = await response.text()
+
+  if (text.length === 0) {
+    return null
+  }
+
   const contentType = response.headers.get('content-type')
 
   if (contentType?.includes('application/json') === true) {
-    try {
-      return JSON.parse(text)
-    } catch {
-      return null
-    }
+    return parseJsonSafe(text)
   }
 
   return text

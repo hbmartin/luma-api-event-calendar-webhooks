@@ -6,7 +6,7 @@ import {
   TagColorSchema,
 } from './common.js'
 import { EventSchema, CouponSchema } from './event.js'
-import { LumaId } from './ids.js'
+import * as LumaId from './ids.js'
 
 // Calendar event entry (slightly different from Event)
 export const CalendarEventEntrySchema = z.object({

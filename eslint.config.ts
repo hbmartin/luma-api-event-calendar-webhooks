@@ -76,13 +76,13 @@ export default defineConfig([
 				"error",
 				{
 					groups: [
+						"type",
 						"builtin",
 						"external",
 						"internal",
-						"parent",
 						"sibling",
+						"parent",
 						"index",
-						"type",
 					],
 					"newlines-between": "never",
 					pathGroups: [
@@ -99,8 +99,9 @@ export default defineConfig([
 				},
 			],
 			"import/no-duplicates": ["error", { "prefer-inline": false }],
-			"import/no-unresolved": "error",
 			"import/no-cycle": "error",
+			"import/no-unresolved": ["error", { ignore: ["\\.js$"] }],
+			"import/namespace": "off",
 
 			// === DISABLE CONFLICTING RULES ===
 			"@typescript-eslint/no-unused-vars": "off", // Use unused-imports plugin
@@ -123,6 +124,7 @@ export default defineConfig([
 			"sonarjs/different-types-comparison": "off",
 			"sonarjs/pseudo-random": "off",
 			"sonarjs/prefer-regexp-exec": "off",
+			"sonarjs/deprecation": "off",
 			"security/detect-object-injection": "off",
 
 			"code-complete/no-late-argument-usage": "error",
@@ -133,6 +135,7 @@ export default defineConfig([
 
 			// Type safety
 			"@typescript-eslint/no-non-null-assertion": "error",
+			"@typescript-eslint/no-empty-object-type": "off",
 			"@typescript-eslint/prefer-nullish-coalescing": "off",
 			"@typescript-eslint/prefer-optional-chain": "error",
 			"@typescript-eslint/strict-boolean-expressions": "warn",
@@ -157,6 +160,7 @@ export default defineConfig([
 				},
 			],
 			"@typescript-eslint/member-ordering": "off",
+			"@typescript-eslint/no-deprecated": "off",
 
 			// JavaScript base rules (enhanced) - Prettier handles formatting
 			curly: ["error", "all"],

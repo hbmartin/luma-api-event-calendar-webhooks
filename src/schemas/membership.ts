@@ -4,7 +4,7 @@ import {
   PaginatedResponseSchema,
   PaginationParamsSchema,
 } from './common.js'
-import { LumaId } from './ids.js'
+import * as LumaId from './ids.js'
 
 // Membership tier schema
 export const MembershipTierSchema = z.object({

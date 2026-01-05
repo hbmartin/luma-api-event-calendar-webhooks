@@ -18,7 +18,8 @@
       "Bash(pnpm test:*)",
       "Bash(pnpm build:*)",
       "Bash(pnpm format:*)",
-      "Bash(wc:*)"
+      "Bash(wc:*)",
+      "Bash(pnpm test:coverage:*)"
     ],
     "deny": [],
     "ask": []

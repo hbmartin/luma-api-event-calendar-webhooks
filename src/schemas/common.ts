@@ -1,17 +1,16 @@
 import { z } from 'zod'
 
 // Pagination schemas
-export namespace Pagination {
-  export const ParamsSchema = z.object({
-    cursor: z.string().optional(),
-    limit: z.number().int().positive().max(100).optional(),
-  })
+export const PaginationParamsSchema = z.object({
+  cursor: z.string().optional(),
+  limit: z.number().int().positive().max(100).optional(),
+})
 
-  export interface Params extends z.infer<typeof ParamsSchema> {}
-}
-
-export const PaginationParamsSchema = Pagination.ParamsSchema
 export interface PaginationParams extends z.infer<typeof PaginationParamsSchema> {}
+
+export const Pagination = {
+  ParamsSchema: PaginationParamsSchema,
+}
 
 export const PaginatedResponseSchema = <T extends z.ZodType>(itemSchema: T) =>
   z.object({

@@ -24,7 +24,7 @@ Search and browse https://docs.luma.com/ for information.
 - **Separate Pure Logic from Side Effects**: Functions that return void hide meaning from the compiler.
   - Prefer Pure functions with explicit inputs/outputs.
 - **Error handling**: Throw domain/application errors (e.g. `DomainError`, `NotFoundError`), then map them to HTTP responses in a global error handler.
--- **Use a single params object for a function argument when there are optional arguments or arguments of the same type**: this enables safe, name based destructuring.
+- **Use a single params object for a function argument when there are optional arguments or arguments of the same type**: this enables safe, name-based destructuring.
 
 ## When to Stop and Ask the User for Guidance
 

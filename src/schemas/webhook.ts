@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { PersonSchema } from './calendar.js'
 import {
   PaginatedResponseSchema,
   PaginationParamsSchema,
@@ -6,8 +7,7 @@ import {
   WebhookStatusSchema,
 } from './common.js'
 import { EventSchema, GuestSchema, TicketTypeSchema } from './event.js'
-import { PersonSchema } from './calendar.js'
-import { LumaId } from './ids.js'
+import * as LumaId from './ids.js'
 
 // Webhook schema
 export const WebhookSchema = z.object({

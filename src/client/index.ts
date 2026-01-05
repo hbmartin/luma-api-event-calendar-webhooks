@@ -1,10 +1,10 @@
 import { createFetcher, type FetcherOptions, type Fetcher } from './fetcher.js'
-import { UserResource } from './resources/user.js'
-import { EntityResource } from './resources/entity.js'
-import { ImagesResource } from './resources/images.js'
-import { EventResource } from './resources/event.js'
 import { CalendarResource } from './resources/calendar.js'
+import { EntityResource } from './resources/entity.js'
+import { EventResource } from './resources/event.js'
+import { ImagesResource } from './resources/images.js'
 import { MembershipResource } from './resources/membership.js'
+import { UserResource } from './resources/user.js'
 import { WebhookResource } from './resources/webhook.js'
 
 export interface LumaClientOptions extends FetcherOptions {}

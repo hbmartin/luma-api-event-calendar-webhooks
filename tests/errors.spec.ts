@@ -149,6 +149,92 @@ describe("LumaNotFoundError", () => {
   });
 });
 
+describe("requestId tracking", () => {
+  it("LumaError should include requestId when provided", () => {
+    const error = new LumaError("Test error", 500, "ERROR", { requestId: "req-123" });
+    expect(error.requestId).toBe("req-123");
+  });
+
+  it("LumaError should have undefined requestId when not provided", () => {
+    const error = new LumaError("Test error");
+    expect(error.requestId).toBeUndefined();
+  });
+
+  it("LumaValidationError should include requestId when provided", () => {
+    const zodError = new ZodError([{
+      code: "invalid_type",
+      expected: "string",
+      received: "number",
+      path: ["field"],
+      message: "Expected string",
+    }]);
+    const error = new LumaValidationError(zodError, "req-validation");
+    expect(error.requestId).toBe("req-validation");
+  });
+
+  it("LumaValidationError should have undefined requestId when not provided", () => {
+    const zodError = new ZodError([{
+      code: "invalid_type",
+      expected: "string",
+      received: "number",
+      path: ["field"],
+      message: "Expected string",
+    }]);
+    const error = new LumaValidationError(zodError);
+    expect(error.requestId).toBeUndefined();
+  });
+
+  it("LumaApiError should include requestId when provided", () => {
+    const error = new LumaApiError("Bad request", 400, undefined, "req-api");
+    expect(error.requestId).toBe("req-api");
+  });
+
+  it("LumaApiError should have undefined requestId when not provided", () => {
+    const error = new LumaApiError("Bad request", 400);
+    expect(error.requestId).toBeUndefined();
+  });
+
+  it("LumaNetworkError should include requestId when provided", () => {
+    const error = new LumaNetworkError("Connection failed", undefined, "req-network");
+    expect(error.requestId).toBe("req-network");
+  });
+
+  it("LumaNetworkError should have undefined requestId when not provided", () => {
+    const error = new LumaNetworkError("Connection failed");
+    expect(error.requestId).toBeUndefined();
+  });
+
+  it("LumaRateLimitError should propagate requestId", () => {
+    const error = new LumaRateLimitError("Rate limited", 60, undefined, "req-rate");
+    expect(error.requestId).toBe("req-rate");
+  });
+
+  it("LumaRateLimitError should have undefined requestId when not provided", () => {
+    const error = new LumaRateLimitError("Rate limited", 60);
+    expect(error.requestId).toBeUndefined();
+  });
+
+  it("LumaAuthenticationError should propagate requestId", () => {
+    const error = new LumaAuthenticationError("Invalid key", undefined, "req-auth");
+    expect(error.requestId).toBe("req-auth");
+  });
+
+  it("LumaAuthenticationError should have undefined requestId when not provided", () => {
+    const error = new LumaAuthenticationError("Invalid key");
+    expect(error.requestId).toBeUndefined();
+  });
+
+  it("LumaNotFoundError should propagate requestId", () => {
+    const error = new LumaNotFoundError("Not found", undefined, "req-notfound");
+    expect(error.requestId).toBe("req-notfound");
+  });
+
+  it("LumaNotFoundError should have undefined requestId when not provided", () => {
+    const error = new LumaNotFoundError("Not found");
+    expect(error.requestId).toBeUndefined();
+  });
+});
+
 describe("Error hierarchy", () => {
   it("should maintain proper inheritance chain", () => {
     const validationError = new LumaValidationError(

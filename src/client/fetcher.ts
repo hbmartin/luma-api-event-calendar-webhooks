@@ -11,10 +11,37 @@ import {
 
 export const BASE_URL = 'https://public-api.luma.com'
 
+export interface DebugRequest {
+  method: RequestOptions['method']
+  url: string
+  headers: Record<string, string>
+  body?: unknown
+}
+
+export interface DebugResponse {
+  status: number
+  ok: boolean
+  headers: Record<string, string>
+  body: unknown
+}
+
+export type DebugOutcome =
+  | { type: 'success'; response: DebugResponse }
+  | { type: 'error'; error: Error }
+
+export interface DebugContext {
+  request: DebugRequest
+  outcome: DebugOutcome
+  durationMs: number
+}
+
+export type DebugHook = (context: DebugContext) => void
+
 export interface FetcherOptions {
   apiKey: string
   baseUrl?: string
   timeout?: number
+  debug?: DebugHook
 }
 
 export interface RequestOptions {
@@ -28,6 +55,7 @@ export interface FetcherConfig {
   apiKey: string
   baseUrl: string
   timeout: number
+  debug?: DebugHook
 }
 
 interface ErrorPayload {
@@ -45,6 +73,14 @@ const hasMessage = (value: unknown): value is ErrorPayload => {
     return false
   }
   return 'message' in value
+}
+
+const headersToRecord = (headers: Headers): Record<string, string> => {
+  const record: Record<string, string> = {}
+  headers.forEach((value, key) => {
+    record[key] = value
+  })
+  return record
 }
 
 const normalizeQueryKey = (key: string): string => {
@@ -66,15 +102,19 @@ const getTrimmedHeader = (header: string | null): string | undefined => {
   return trimmed.length > 0 ? trimmed : undefined
 }
 
-const isNumericRetryAfter = (value: string): boolean => /^-?\d+$/.test(value)
+const isNumericRetryAfter = (value: string): boolean => /^\d+$/.test(value)
+
+const isNegativeNumber = (value: string): boolean => /^-\d+$/.test(value)
 
 const parseNumericRetryAfter = (value: string): number | undefined => {
-  if (!isNumericRetryAfter(value)) {
+  const trimmed = value.trim()
+
+  if (!isNumericRetryAfter(trimmed)) {
     return undefined
   }
 
-  const numericValue = Number.parseInt(value, 10)
-  if (!Number.isFinite(numericValue) || numericValue < 0) {
+  const numericValue = Number.parseInt(trimmed, 10)
+  if (!Number.isFinite(numericValue)) {
     return undefined
   }
 
@@ -114,6 +154,8 @@ const parseJsonSafe = (text: string): unknown => {
   }
 }
 
+const JSON_CONTENT_TYPE_PATTERN = /application\/(?:json|[^;]*\+json)/
+
 const parseResponsePayload = async (response: Response): Promise<unknown> => {
   const text = await response.text()
 
@@ -123,7 +165,7 @@ const parseResponsePayload = async (response: Response): Promise<unknown> => {
 
   const contentType = response.headers.get('content-type')
 
-  if (contentType?.includes('application/json') === true) {
+  if (contentType !== null && JSON_CONTENT_TYPE_PATTERN.test(contentType)) {
     return parseJsonSafe(text)
   }
 
@@ -216,10 +258,6 @@ const mapRequestError = (error: unknown, timeoutMs: number): LumaError =>
         : new LumaNetworkError(error.message, error)
       : new LumaNetworkError('An unknown error occurred', error)
 
-const rethrowRequestError = (error: unknown, timeoutMs: number): never => {
-  throw mapRequestError(error, timeoutMs)
-}
-
 /**
  * Parses a Retry-After header value, supporting both numeric seconds and HTTP-date formats.
  * @param header - The Retry-After header value
@@ -227,11 +265,14 @@ const rethrowRequestError = (error: unknown, timeoutMs: number): never => {
  */
 export function parseRetryAfter(header: string | null): number | undefined {
   const trimmed = getTrimmedHeader(header)
-  return trimmed === undefined
-    ? undefined
-    : isNumericRetryAfter(trimmed)
-      ? parseNumericRetryAfter(trimmed)
-      : parseDateRetryAfter(trimmed, Date.now())
+
+  if (trimmed === undefined || isNegativeNumber(trimmed)) {
+    return undefined
+  }
+
+  return isNumericRetryAfter(trimmed)
+    ? parseNumericRetryAfter(trimmed)
+    : parseDateRetryAfter(trimmed, Date.now())
 }
 
 function buildUrl(baseUrl: string, path: string, query?: QueryParams): string {
@@ -242,35 +283,71 @@ function buildUrl(baseUrl: string, path: string, query?: QueryParams): string {
   return url.toString()
 }
 
-async function handleResponse<T>(response: Response, schema: ZodType<T>): Promise<T> {
-  const data = await parseResponsePayload(response)
-
-  if (response.ok) {
-    return parseSchemaResult(schema, data)
-  }
-
-  return throwForResponseStatus(response, data)
-}
-
 export function createFetcher(options: FetcherOptions) {
   const config: FetcherConfig = {
     apiKey: options.apiKey,
     baseUrl: options.baseUrl ?? BASE_URL,
     timeout: options.timeout ?? 30_000,
+    debug: options.debug,
   }
 
   async function request<T>(requestOptions: RequestOptions, schema: ZodType<T>): Promise<T> {
     const { method, path, query, body } = requestOptions
     const url = buildUrl(config.baseUrl, path, query)
-
     const init = buildRequestInit(config.apiKey, { method, body })
 
-    return withTimeout(config.timeout, async (signal) => {
-      const response = await fetch(url, { ...init, signal })
-      return handleResponse(response, schema)
-    }).catch((error: unknown) => {
-      return rethrowRequestError(error, config.timeout)
-    })
+    const debugRequest: DebugRequest = {
+      method,
+      url,
+      headers: init.headers as Record<string, string>,
+      ...(body !== undefined && { body }),
+    }
+
+    const startTime = Date.now()
+
+    try {
+      return await withTimeout(config.timeout, async (signal) => {
+        const response = await fetch(url, { ...init, signal })
+        const data = await parseResponsePayload(response)
+
+        config.debug?.({
+          request: debugRequest,
+          outcome: {
+            type: 'success',
+            response: {
+              status: response.status,
+              ok: response.ok,
+              headers: headersToRecord(response.headers),
+              body: data,
+            },
+          },
+          durationMs: Date.now() - startTime,
+        })
+
+        if (response.ok) {
+          return parseSchemaResult(schema, data)
+        }
+
+        return throwForResponseStatus(response, data)
+      })
+    } catch (error: unknown) {
+      const mappedError = mapRequestError(error, config.timeout)
+
+      // Only call debug for actual network/timeout errors, not API errors
+      // (API errors already triggered a debug call with the response)
+      if (mappedError instanceof LumaNetworkError) {
+        config.debug?.({
+          request: debugRequest,
+          outcome: {
+            type: 'error',
+            error: mappedError,
+          },
+          durationMs: Date.now() - startTime,
+        })
+      }
+
+      throw mappedError
+    }
   }
 
   async function get<T>(

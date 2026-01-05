@@ -35,4 +35,14 @@ export class LumaClient {
 
 // Re-export fetcher utilities
 export { createFetcher, BASE_URL, parseRetryAfter } from './fetcher.js'
-export type { FetcherOptions, Fetcher, RequestOptions, FetcherConfig } from './fetcher.js'
+export type {
+  FetcherOptions,
+  Fetcher,
+  RequestOptions,
+  FetcherConfig,
+  DebugContext,
+  DebugHook,
+  DebugRequest,
+  DebugResponse,
+  DebugOutcome,
+} from './fetcher.js'

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { LumaClient, BASE_URL, parseRetryAfter, LumaError, LumaRateLimitError, LumaApiError, LumaNetworkError, LumaAuthenticationError, LumaNotFoundError, LumaValidationError } from "../src/index.js";
+import { LumaClient, BASE_URL, parseRetryAfter, LumaError, LumaRateLimitError, LumaApiError, LumaNetworkError, LumaAuthenticationError, LumaNotFoundError, LumaValidationError, type DebugContext } from "../src/index.js";
 
 // Mock fetch globally
 const mockFetch = vi.fn();
@@ -340,6 +340,41 @@ describe("LumaClient", () => {
       await expect(client.user.getSelf()).rejects.toThrow(LumaValidationError);
     });
 
+    it("should parse JSON subtypes like application/problem+json", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        headers: new Headers({ "content-type": "application/problem+json" }),
+        text: async () => JSON.stringify({ message: "Bad request" }),
+      });
+
+      await expect(client.user.getSelf()).rejects.toThrow(LumaApiError);
+    });
+
+    it("should parse vendor JSON subtypes like application/vnd.api+json", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        headers: new Headers({ "content-type": "application/vnd.api+json" }),
+        text: async () => JSON.stringify({ message: "Validation failed" }),
+      });
+
+      await expect(client.user.getSelf()).rejects.toThrow(LumaApiError);
+    });
+
+    it("should parse JSON content type with charset parameter", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        headers: new Headers({
+          "content-type": "application/json; charset=utf-8",
+        }),
+        text: async () => JSON.stringify({ message: "Error with charset" }),
+      });
+
+      await expect(client.user.getSelf()).rejects.toThrow(LumaApiError);
+    });
+
     it("should use fallback error message when response has no message field", async () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
@@ -475,6 +510,298 @@ describe("LumaClient", () => {
         throw new Error("Expected request options with headers.");
       }
       expect(calledOptions.headers).not.toHaveProperty("Content-Type");
+    });
+  });
+
+  describe("debug hook", () => {
+    it("should call debug hook on successful request", async () => {
+      const debugSpy = vi.fn<[DebugContext], void>();
+      const debugClient = new LumaClient({
+        apiKey: "test-api-key",
+        debug: debugSpy,
+      });
+
+      const mockResponse = {
+        user: {
+          api_id: "user-123",
+          email: "test@example.com",
+          name: "Test User",
+        },
+      };
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: new Headers({ "content-type": "application/json" }),
+        text: async () => JSON.stringify(mockResponse),
+      });
+
+      await debugClient.user.getSelf();
+
+      expect(debugSpy).toHaveBeenCalledTimes(1);
+      const context = debugSpy.mock.calls[0]![0];
+      expect(context.request.method).toBe("GET");
+      expect(context.request.url).toContain("/v1/user/get-self");
+      expect(context.request.headers["x-luma-api-key"]).toBe("test-api-key");
+      expect(context.outcome.type).toBe("success");
+      if (context.outcome.type === "success") {
+        expect(context.outcome.response.status).toBe(200);
+        expect(context.outcome.response.ok).toBe(true);
+        expect(context.outcome.response.body).toEqual(mockResponse);
+      }
+      expect(context.durationMs).toBeGreaterThanOrEqual(0);
+    });
+
+    it("should call debug hook on API error with response info", async () => {
+      const debugSpy = vi.fn<[DebugContext], void>();
+      const debugClient = new LumaClient({
+        apiKey: "test-api-key",
+        debug: debugSpy,
+      });
+
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        headers: new Headers({ "content-type": "application/json" }),
+        text: async () => JSON.stringify({ message: "Invalid API key" }),
+      });
+
+      await expect(debugClient.user.getSelf()).rejects.toThrow(LumaAuthenticationError);
+
+      expect(debugSpy).toHaveBeenCalledTimes(1);
+      const context = debugSpy.mock.calls[0]![0];
+      expect(context.outcome.type).toBe("success");
+      if (context.outcome.type === "success") {
+        expect(context.outcome.response.status).toBe(401);
+        expect(context.outcome.response.ok).toBe(false);
+      }
+    });
+
+    it("should call debug hook on 404 error", async () => {
+      const debugSpy = vi.fn<[DebugContext], void>();
+      const debugClient = new LumaClient({
+        apiKey: "test-api-key",
+        debug: debugSpy,
+      });
+
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        headers: new Headers({ "content-type": "application/json" }),
+        text: async () => JSON.stringify({ message: "Not found" }),
+      });
+
+      await expect(
+        debugClient.event.get({ event_api_id: "nonexistent" })
+      ).rejects.toThrow(LumaNotFoundError);
+
+      expect(debugSpy).toHaveBeenCalledTimes(1);
+      const context = debugSpy.mock.calls[0]![0];
+      expect(context.outcome.type).toBe("success");
+      if (context.outcome.type === "success") {
+        expect(context.outcome.response.status).toBe(404);
+      }
+    });
+
+    it("should call debug hook on 429 rate limit error", async () => {
+      const debugSpy = vi.fn<[DebugContext], void>();
+      const debugClient = new LumaClient({
+        apiKey: "test-api-key",
+        debug: debugSpy,
+      });
+
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 429,
+        headers: new Headers({
+          "content-type": "application/json",
+          "retry-after": "60",
+        }),
+        text: async () => JSON.stringify({ message: "Rate limit exceeded" }),
+      });
+
+      await expect(debugClient.user.getSelf()).rejects.toThrow(LumaRateLimitError);
+
+      expect(debugSpy).toHaveBeenCalledTimes(1);
+      const context = debugSpy.mock.calls[0]![0];
+      expect(context.outcome.type).toBe("success");
+      if (context.outcome.type === "success") {
+        expect(context.outcome.response.status).toBe(429);
+        expect(context.outcome.response.headers["retry-after"]).toBe("60");
+      }
+    });
+
+    it("should call debug hook with error outcome on network failure", async () => {
+      const debugSpy = vi.fn<[DebugContext], void>();
+      const debugClient = new LumaClient({
+        apiKey: "test-api-key",
+        debug: debugSpy,
+      });
+
+      mockFetch.mockRejectedValueOnce(new Error("Network error"));
+
+      await expect(debugClient.user.getSelf()).rejects.toThrow(LumaNetworkError);
+
+      expect(debugSpy).toHaveBeenCalledTimes(1);
+      const context = debugSpy.mock.calls[0]![0];
+      expect(context.outcome.type).toBe("error");
+      if (context.outcome.type === "error") {
+        expect(context.outcome.error).toBeInstanceOf(LumaNetworkError);
+        expect(context.outcome.error.message).toBe("Network error");
+      }
+    });
+
+    it("should call debug hook with error outcome on timeout", async () => {
+      const debugSpy = vi.fn<[DebugContext], void>();
+      const debugClient = new LumaClient({
+        apiKey: "test-api-key",
+        timeout: 1,
+        debug: debugSpy,
+      });
+
+      // Properly simulate an aborted fetch by checking the signal
+      mockFetch.mockImplementationOnce(
+        (_url: string, options?: { signal?: AbortSignal }) =>
+          new Promise((_resolve, reject) => {
+            const checkAbort = () => {
+              if (options?.signal?.aborted) {
+                const abortError = new Error("The operation was aborted");
+                abortError.name = "AbortError";
+                reject(abortError);
+                return true;
+              }
+              return false;
+            };
+
+            // Check immediately and then on abort event
+            if (!checkAbort() && options?.signal) {
+              options.signal.addEventListener("abort", () => checkAbort());
+            }
+          })
+      );
+
+      await expect(debugClient.user.getSelf()).rejects.toThrow(LumaNetworkError);
+
+      expect(debugSpy).toHaveBeenCalledTimes(1);
+      const context = debugSpy.mock.calls[0]![0];
+      expect(context.outcome.type).toBe("error");
+      if (context.outcome.type === "error") {
+        expect(context.outcome.error).toBeInstanceOf(LumaNetworkError);
+        expect(context.outcome.error.message).toContain("timed out");
+      }
+    });
+
+    it("should include request body in debug context for POST requests", async () => {
+      const debugSpy = vi.fn<[DebugContext], void>();
+      const debugClient = new LumaClient({
+        apiKey: "test-api-key",
+        debug: debugSpy,
+      });
+
+      const mockResponse = {
+        event: {
+          api_id: "evt-new",
+          name: "New Event",
+          start_at: "2024-02-01T14:00:00Z",
+          end_at: "2024-02-01T16:00:00Z",
+          timezone: "UTC",
+        },
+      };
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: new Headers({ "content-type": "application/json" }),
+        text: async () => JSON.stringify(mockResponse),
+      });
+
+      const requestBody = {
+        name: "New Event",
+        start_at: "2024-02-01T14:00:00Z",
+        end_at: "2024-02-01T16:00:00Z",
+        timezone: "UTC",
+      };
+
+      await debugClient.event.create(requestBody);
+
+      expect(debugSpy).toHaveBeenCalledTimes(1);
+      const context = debugSpy.mock.calls[0]![0];
+      expect(context.request.method).toBe("POST");
+      expect(context.request.body).toEqual(requestBody);
+      expect(context.request.headers["Content-Type"]).toBe("application/json");
+    });
+
+    it("should not include body property for GET requests", async () => {
+      const debugSpy = vi.fn<[DebugContext], void>();
+      const debugClient = new LumaClient({
+        apiKey: "test-api-key",
+        debug: debugSpy,
+      });
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: new Headers({ "content-type": "application/json" }),
+        text: async () => JSON.stringify({
+          user: { api_id: "user-123", email: "test@example.com", name: "Test" },
+        }),
+      });
+
+      await debugClient.user.getSelf();
+
+      expect(debugSpy).toHaveBeenCalledTimes(1);
+      const context = debugSpy.mock.calls[0]![0];
+      expect(context.request).not.toHaveProperty("body");
+    });
+
+    it("should not call debug hook when not provided", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: new Headers({ "content-type": "application/json" }),
+        text: async () => JSON.stringify({
+          user: { api_id: "user-123", email: "test@example.com", name: "Test" },
+        }),
+      });
+
+      // Using the client without debug option
+      await client.user.getSelf();
+
+      // No debug spy was set up, so we just verify the request succeeded
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+    });
+
+    it("should measure duration accurately", async () => {
+      const debugSpy = vi.fn<[DebugContext], void>();
+      const debugClient = new LumaClient({
+        apiKey: "test-api-key",
+        debug: debugSpy,
+      });
+
+      const delay = 50;
+      mockFetch.mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            setTimeout(() => {
+              resolve({
+                ok: true,
+                status: 200,
+                headers: new Headers({ "content-type": "application/json" }),
+                text: async () => JSON.stringify({
+                  user: { api_id: "user-123", email: "test@example.com", name: "Test" },
+                }),
+              });
+            }, delay);
+          })
+      );
+
+      await debugClient.user.getSelf();
+
+      expect(debugSpy).toHaveBeenCalledTimes(1);
+      const context = debugSpy.mock.calls[0]![0];
+      // Allow some tolerance for test execution overhead
+      expect(context.durationMs).toBeGreaterThanOrEqual(delay - 10);
+      expect(context.durationMs).toBeLessThan(delay + 100);
     });
   });
 });

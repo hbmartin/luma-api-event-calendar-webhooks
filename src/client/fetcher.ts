@@ -70,7 +70,7 @@ const isNumericRetryAfter = (value: string): boolean => /^-?\d+$/.test(value)
 
 const parseNumericRetryAfter = (value: string): number | undefined => {
   const numericValue = Number.parseInt(value, 10)
-  if (!isNumericRetryAfter(value) || !Number.isFinite(numericValue) || numericValue < 0) {
+  if (!Number.isFinite(numericValue) || numericValue < 0) {
     return undefined
   }
 
@@ -102,21 +102,19 @@ const applyQueryParams = (url: URL, query: QueryParams): void => {
   }
 }
 
-const parseJsonPayload = async (response: Response): Promise<unknown> => {
-  try {
-    return await response.json()
-  } catch {
-    return null
-  }
-}
-
 const parseResponsePayload = async (response: Response): Promise<unknown> => {
+  const text = await response.text()
   const contentType = response.headers.get('content-type')
+
   if (contentType?.includes('application/json') === true) {
-    return parseJsonPayload(response)
+    try {
+      return JSON.parse(text)
+    } catch {
+      return null
+    }
   }
 
-  return response.text()
+  return text
 }
 
 const parseSchemaResult = <T>(schema: ZodType<T>, data: unknown): T => {
@@ -172,7 +170,7 @@ const formatRequestBody = (body: unknown): string | undefined => {
 const buildRequestInit = (apiKey: string, options: BuildRequestInitOptions): RequestInit => {
   const headers: HeadersInit = {
     'x-luma-api-key': apiKey,
-    'Content-Type': 'application/json',
+    ...(options.body !== undefined && { 'Content-Type': 'application/json' }),
   }
 
   return {
@@ -203,7 +201,7 @@ const mapRequestError = (error: unknown, timeoutMs: number): LumaError =>
       ? error.name === 'AbortError'
         ? new LumaNetworkError(`Request timed out after ${timeoutMs}ms`, error)
         : new LumaNetworkError(error.message, error)
-      : new LumaNetworkError('An unknown error occurred')
+      : new LumaNetworkError('An unknown error occurred', error)
 
 const rethrowRequestError = (error: unknown, timeoutMs: number): never => {
   throw mapRequestError(error, timeoutMs)

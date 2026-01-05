@@ -1,5 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { LumaClient, BASE_URL } from '../src/index.js'
+import {
+  LumaClient,
+  BASE_URL,
+  LumaApiError,
+  LumaNetworkError,
+  LumaValidationError,
+} from '../src/index.js'
 
 const mockFetch = vi.fn()
 global.fetch = mockFetch
@@ -26,7 +32,7 @@ describe('CalendarResource', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       })
 
       const result = await client.calendar.listPersonTags()
@@ -48,7 +54,7 @@ describe('CalendarResource', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       })
 
       await client.calendar.listPersonTags({ calendar_api_id: 'cal-123' })
@@ -57,6 +63,33 @@ describe('CalendarResource', () => {
         expect.stringContaining('calendar_api_id=cal-123'),
         expect.any(Object)
       )
+    })
+
+    it('should throw LumaNetworkError when fetch rejects', async () => {
+      mockFetch.mockRejectedValueOnce(new Error('Network failure'))
+
+      await expect(client.calendar.listPersonTags()).rejects.toThrow(LumaNetworkError)
+    })
+
+    it('should throw LumaApiError when response is not ok', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        text: async () => JSON.stringify({ message: 'Internal server error' }),
+      })
+
+      await expect(client.calendar.listPersonTags()).rejects.toThrow(LumaApiError)
+    })
+
+    it('should throw LumaValidationError when response has invalid schema', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        text: async () => JSON.stringify({ invalid: 'response' }),
+      })
+
+      await expect(client.calendar.listPersonTags()).rejects.toThrow(LumaValidationError)
     })
   })
 
@@ -70,7 +103,7 @@ describe('CalendarResource', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       })
 
       const result = await client.calendar.lookupEvent({
@@ -93,7 +126,7 @@ describe('CalendarResource', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       })
 
       const result = await client.calendar.lookupEvent({
@@ -105,6 +138,27 @@ describe('CalendarResource', () => {
         expect.any(Object)
       )
       expect(result.event?.name).toBe('URL Event')
+    })
+
+    it('should throw LumaNetworkError when fetch rejects', async () => {
+      mockFetch.mockRejectedValueOnce(new Error('Connection refused'))
+
+      await expect(
+        client.calendar.lookupEvent({ event_api_id: 'evt-123' })
+      ).rejects.toThrow(LumaNetworkError)
+    })
+
+    it('should throw LumaApiError when response is not ok', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 403,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        text: async () => JSON.stringify({ message: 'Forbidden' }),
+      })
+
+      await expect(
+        client.calendar.lookupEvent({ event_api_id: 'evt-123' })
+      ).rejects.toThrow(LumaApiError)
     })
   })
 
@@ -119,7 +173,7 @@ describe('CalendarResource', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       })
 
       const result = await client.calendar.listPeople()
@@ -129,6 +183,23 @@ describe('CalendarResource', () => {
         expect.any(Object)
       )
       expect(result.entries).toHaveLength(1)
+    })
+
+    it('should throw LumaNetworkError when fetch rejects', async () => {
+      mockFetch.mockRejectedValueOnce(new Error('Network timeout'))
+
+      await expect(client.calendar.listPeople()).rejects.toThrow(LumaNetworkError)
+    })
+
+    it('should throw LumaApiError when response is not ok', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        text: async () => JSON.stringify({ message: 'Server error' }),
+      })
+
+      await expect(client.calendar.listPeople()).rejects.toThrow(LumaApiError)
     })
   })
 
@@ -150,7 +221,7 @@ describe('CalendarResource', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       })
 
       const result = await client.calendar.listCoupons()
@@ -160,6 +231,23 @@ describe('CalendarResource', () => {
         expect.any(Object)
       )
       expect(result.entries).toHaveLength(1)
+    })
+
+    it('should throw LumaNetworkError when fetch rejects', async () => {
+      mockFetch.mockRejectedValueOnce(new Error('DNS lookup failed'))
+
+      await expect(client.calendar.listCoupons()).rejects.toThrow(LumaNetworkError)
+    })
+
+    it('should throw LumaApiError when response is not ok', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        text: async () => JSON.stringify({ message: 'Unauthorized' }),
+      })
+
+      await expect(client.calendar.listCoupons()).rejects.toThrow(LumaApiError)
     })
   })
 
@@ -177,7 +265,7 @@ describe('CalendarResource', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       })
 
       const result = await client.calendar.createCoupon({
@@ -206,7 +294,7 @@ describe('CalendarResource', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       })
 
       const result = await client.calendar.createCoupon({
@@ -216,6 +304,35 @@ describe('CalendarResource', () => {
       })
 
       expect(result.coupon.code).toBe('FLAT10')
+    })
+
+    it('should throw LumaNetworkError when fetch rejects', async () => {
+      mockFetch.mockRejectedValueOnce(new Error('Connection reset'))
+
+      await expect(
+        client.calendar.createCoupon({
+          code: 'TEST',
+          discount_type: 'percentage',
+          discount_percentage: 10,
+        })
+      ).rejects.toThrow(LumaNetworkError)
+    })
+
+    it('should throw LumaApiError when response is not ok', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        text: async () => JSON.stringify({ message: 'Invalid coupon code' }),
+      })
+
+      await expect(
+        client.calendar.createCoupon({
+          code: 'TEST',
+          discount_type: 'percentage',
+          discount_percentage: 10,
+        })
+      ).rejects.toThrow(LumaApiError)
     })
   })
 
@@ -233,7 +350,7 @@ describe('CalendarResource', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       })
 
       const result = await client.calendar.updateCoupon({
@@ -247,6 +364,27 @@ describe('CalendarResource', () => {
       )
       expect(result.coupon.api_id).toBe('coupon-1')
     })
+
+    it('should throw LumaNetworkError when fetch rejects', async () => {
+      mockFetch.mockRejectedValueOnce(new Error('Socket hang up'))
+
+      await expect(
+        client.calendar.updateCoupon({ coupon_api_id: 'coupon-1', max_uses: 50 })
+      ).rejects.toThrow(LumaNetworkError)
+    })
+
+    it('should throw LumaApiError when response is not ok', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        text: async () => JSON.stringify({ message: 'Coupon not found' }),
+      })
+
+      await expect(
+        client.calendar.updateCoupon({ coupon_api_id: 'coupon-1', max_uses: 50 })
+      ).rejects.toThrow(LumaApiError)
+    })
   })
 
   describe('importPeople', () => {
@@ -259,7 +397,7 @@ describe('CalendarResource', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       })
 
       const result = await client.calendar.importPeople({
@@ -272,6 +410,27 @@ describe('CalendarResource', () => {
       )
       expect(result.imported_count).toBe(1)
     })
+
+    it('should throw LumaNetworkError when fetch rejects', async () => {
+      mockFetch.mockRejectedValueOnce(new Error('Request aborted'))
+
+      await expect(
+        client.calendar.importPeople({ people: [{ email: 'test@example.com' }] })
+      ).rejects.toThrow(LumaNetworkError)
+    })
+
+    it('should throw LumaApiError when response is not ok', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 422,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        text: async () => JSON.stringify({ message: 'Invalid email format' }),
+      })
+
+      await expect(
+        client.calendar.importPeople({ people: [{ email: 'invalid' }] })
+      ).rejects.toThrow(LumaApiError)
+    })
   })
 
   describe('createPersonTag', () => {
@@ -283,7 +442,7 @@ describe('CalendarResource', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       })
 
       const result = await client.calendar.createPersonTag({
@@ -296,6 +455,27 @@ describe('CalendarResource', () => {
       )
       expect(result.tag.name).toBe('NewTag')
     })
+
+    it('should throw LumaNetworkError when fetch rejects', async () => {
+      mockFetch.mockRejectedValueOnce(new Error('ECONNREFUSED'))
+
+      await expect(
+        client.calendar.createPersonTag({ name: 'Test' })
+      ).rejects.toThrow(LumaNetworkError)
+    })
+
+    it('should throw LumaApiError when response is not ok', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        text: async () => JSON.stringify({ message: 'Tag name already exists' }),
+      })
+
+      await expect(
+        client.calendar.createPersonTag({ name: 'Duplicate' })
+      ).rejects.toThrow(LumaApiError)
+    })
   })
 
   describe('updatePersonTag', () => {
@@ -307,7 +487,7 @@ describe('CalendarResource', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       })
 
       const result = await client.calendar.updatePersonTag({
@@ -321,6 +501,27 @@ describe('CalendarResource', () => {
       )
       expect(result.tag.name).toBe('UpdatedTag')
     })
+
+    it('should throw LumaNetworkError when fetch rejects', async () => {
+      mockFetch.mockRejectedValueOnce(new Error('Network unreachable'))
+
+      await expect(
+        client.calendar.updatePersonTag({ tag_api_id: 'tag-1', name: 'Updated' })
+      ).rejects.toThrow(LumaNetworkError)
+    })
+
+    it('should throw LumaApiError when response is not ok', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        text: async () => JSON.stringify({ message: 'Tag not found' }),
+      })
+
+      await expect(
+        client.calendar.updatePersonTag({ tag_api_id: 'nonexistent', name: 'Updated' })
+      ).rejects.toThrow(LumaApiError)
+    })
   })
 
   describe('deletePersonTag', () => {
@@ -330,7 +531,7 @@ describe('CalendarResource', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       })
 
       const result = await client.calendar.deletePersonTag({
@@ -342,6 +543,27 @@ describe('CalendarResource', () => {
         expect.objectContaining({ method: 'POST' })
       )
       expect(result.success).toBe(true)
+    })
+
+    it('should throw LumaNetworkError when fetch rejects', async () => {
+      mockFetch.mockRejectedValueOnce(new Error('Request failed'))
+
+      await expect(
+        client.calendar.deletePersonTag({ tag_api_id: 'tag-1' })
+      ).rejects.toThrow(LumaNetworkError)
+    })
+
+    it('should throw LumaApiError when response is not ok', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 403,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        text: async () => JSON.stringify({ message: 'Permission denied' }),
+      })
+
+      await expect(
+        client.calendar.deletePersonTag({ tag_api_id: 'tag-1' })
+      ).rejects.toThrow(LumaApiError)
     })
   })
 
@@ -355,7 +577,7 @@ describe('CalendarResource', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       })
 
       const result = await client.calendar.addEvent({
@@ -378,7 +600,7 @@ describe('CalendarResource', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       })
 
       const result = await client.calendar.addEvent({
@@ -386,6 +608,27 @@ describe('CalendarResource', () => {
       })
 
       expect(result.success).toBe(true)
+    })
+
+    it('should throw LumaNetworkError when fetch rejects', async () => {
+      mockFetch.mockRejectedValueOnce(new Error('Connection timeout'))
+
+      await expect(
+        client.calendar.addEvent({ event_api_id: 'evt-123' })
+      ).rejects.toThrow(LumaNetworkError)
+    })
+
+    it('should throw LumaApiError when response is not ok', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        text: async () => JSON.stringify({ message: 'Event not found' }),
+      })
+
+      await expect(
+        client.calendar.addEvent({ event_api_id: 'nonexistent' })
+      ).rejects.toThrow(LumaApiError)
     })
   })
 
@@ -396,7 +639,7 @@ describe('CalendarResource', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       })
 
       const result = await client.calendar.applyPersonTag({
@@ -417,7 +660,7 @@ describe('CalendarResource', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       })
 
       const result = await client.calendar.applyPersonTag({
@@ -436,7 +679,7 @@ describe('CalendarResource', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       })
 
       const result = await client.calendar.removePersonTag({
@@ -470,7 +713,7 @@ describe('EventResource', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       })
 
       const result = await client.event.getGuest({
@@ -492,7 +735,7 @@ describe('EventResource', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       })
 
       const result = await client.event.getGuest({
@@ -515,7 +758,7 @@ describe('EventResource', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       })
 
       const result = await client.event.getGuests({
@@ -539,7 +782,7 @@ describe('EventResource', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       })
 
       const result = await client.event.update({
@@ -564,7 +807,7 @@ describe('EventResource', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       })
 
       const result = await client.event.updateGuestStatus({
@@ -588,7 +831,7 @@ describe('EventResource', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       })
 
       const result = await client.event.sendInvites({
@@ -613,7 +856,7 @@ describe('EventResource', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       })
 
       const result = await client.event.addGuests({
@@ -638,7 +881,7 @@ describe('EventResource', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       })
 
       const result = await client.event.addHost({
@@ -672,7 +915,7 @@ describe('EventResource', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       })
 
       const result = await client.event.getCoupons({
@@ -701,7 +944,7 @@ describe('EventResource', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       })
 
       const result = await client.event.createCoupon({
@@ -734,7 +977,7 @@ describe('EventResource', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       })
 
       const result = await client.event.updateCoupon({
@@ -759,7 +1002,7 @@ describe('EventResource', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       })
 
       const result = await client.event.listTicketTypes({
@@ -783,7 +1026,7 @@ describe('EventResource', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       })
 
       const result = await client.event.getTicketType({
@@ -807,7 +1050,7 @@ describe('EventResource', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       })
 
       const result = await client.event.createTicketType({
@@ -832,7 +1075,7 @@ describe('EventResource', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       })
 
       const result = await client.event.updateTicketType({
@@ -855,7 +1098,7 @@ describe('EventResource', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       })
 
       const result = await client.event.deleteTicketType({
@@ -896,7 +1139,7 @@ describe('WebhookResource', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       })
 
       const result = await client.webhook.list()
@@ -918,7 +1161,7 @@ describe('WebhookResource', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       })
 
       await client.webhook.list({ calendar_api_id: 'cal-123' })
@@ -943,7 +1186,7 @@ describe('WebhookResource', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       })
 
       const result = await client.webhook.get({ webhook_api_id: 'wh-123' })
@@ -969,7 +1212,7 @@ describe('WebhookResource', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       })
 
       const result = await client.webhook.update({
@@ -992,7 +1235,7 @@ describe('WebhookResource', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       })
 
       const result = await client.webhook.delete({ webhook_api_id: 'wh-123' })
@@ -1023,7 +1266,7 @@ describe('EntityResource', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       })
 
       const result = await client.entity.lookup({ slug: 'my-calendar' })
@@ -1043,7 +1286,7 @@ describe('EntityResource', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       })
 
       const result = await client.entity.lookup({ slug: 'nonexistent' })
@@ -1071,7 +1314,7 @@ describe('ImagesResource', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       })
 
       const result = await client.images.createUploadUrl({
@@ -1107,7 +1350,7 @@ describe('MembershipResource', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       })
 
       const result = await client.membership.listTiers()
@@ -1129,7 +1372,7 @@ describe('MembershipResource', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       })
 
       await client.membership.listTiers({ calendar_api_id: 'cal-123' })
@@ -1150,7 +1393,7 @@ describe('MembershipResource', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       })
 
       const result = await client.membership.addMemberToTier({
@@ -1175,7 +1418,7 @@ describe('MembershipResource', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       })
 
       const result = await client.membership.updateMemberStatus({
@@ -1199,7 +1442,7 @@ describe('MembershipResource', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       })
 
       const result = await client.membership.updateMemberStatus({

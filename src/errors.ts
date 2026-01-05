@@ -52,7 +52,7 @@ export class LumaApiError extends LumaError {
 }
 
 export class LumaNetworkError extends LumaError {
-  constructor(message: string, cause?: Error) {
+  constructor(message: string, cause?: unknown) {
     super(message, undefined, 'NETWORK_ERROR', { cause })
     this.name = 'LumaNetworkError'
     Object.setPrototypeOf(this, LumaNetworkError.prototype)

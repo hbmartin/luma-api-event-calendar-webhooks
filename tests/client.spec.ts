@@ -66,7 +66,7 @@ describe("LumaClient", () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ "content-type": "application/json" }),
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       });
 
       const result = await client.user.getSelf();
@@ -99,7 +99,7 @@ describe("LumaClient", () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ "content-type": "application/json" }),
-        json: async () => mockEvent,
+        text: async () => JSON.stringify(mockEvent),
       });
 
       const result = await client.event.get({ event_api_id: "evt-123" });
@@ -127,7 +127,7 @@ describe("LumaClient", () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ "content-type": "application/json" }),
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       });
 
       const result = await client.event.create({
@@ -164,7 +164,7 @@ describe("LumaClient", () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ "content-type": "application/json" }),
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       });
 
       const result = await client.calendar.listEvents({
@@ -194,7 +194,7 @@ describe("LumaClient", () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ "content-type": "application/json" }),
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       });
 
       const result = await client.webhook.create({
@@ -213,7 +213,7 @@ describe("LumaClient", () => {
         ok: false,
         status: 401,
         headers: new Headers({ "content-type": "application/json" }),
-        json: async () => ({ message: "Invalid API key" }),
+        text: async () => JSON.stringify({ message: "Invalid API key" }),
       });
 
       await expect(client.user.getSelf()).rejects.toThrow(LumaAuthenticationError);
@@ -224,7 +224,7 @@ describe("LumaClient", () => {
         ok: false,
         status: 404,
         headers: new Headers({ "content-type": "application/json" }),
-        json: async () => ({ message: "Event not found" }),
+        text: async () => JSON.stringify({ message: "Event not found" }),
       });
 
       await expect(
@@ -240,7 +240,7 @@ describe("LumaClient", () => {
           "content-type": "application/json",
           "retry-after": "60",
         }),
-        json: async () => ({ message: "Rate limit exceeded" }),
+        text: async () => JSON.stringify({ message: "Rate limit exceeded" }),
       });
 
       try {
@@ -261,7 +261,7 @@ describe("LumaClient", () => {
         ok: false,
         status: 500,
         headers: new Headers({ "content-type": "application/json" }),
-        json: async () => ({ message: "Internal server error" }),
+        text: async () => JSON.stringify({ message: "Internal server error" }),
       });
 
       try {
@@ -304,7 +304,7 @@ describe("LumaClient", () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ "content-type": "application/json" }),
-        json: async () => ({ user: {} }),
+        text: async () => JSON.stringify({ user: {} }),
       });
 
       await expect(client.user.getSelf()).rejects.toThrow(LumaValidationError);
@@ -316,7 +316,7 @@ describe("LumaClient", () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ "content-type": "application/json" }),
-        json: async () => ({
+        text: async () => JSON.stringify({
           entries: [],
           has_more: false,
           next_cursor: null,
@@ -342,7 +342,7 @@ describe("LumaClient", () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ "content-type": "application/json" }),
-        json: async () => ({
+        text: async () => JSON.stringify({
           entries: [],
           has_more: false,
           next_cursor: null,
@@ -370,7 +370,7 @@ describe("LumaClient", () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ "content-type": "application/json" }),
-        json: async () => ({ user: { api_id: "user-123" } }),
+        text: async () => JSON.stringify({ user: { api_id: "user-123" } }),
       });
 
       await client.user.getSelf();
@@ -386,14 +386,20 @@ describe("LumaClient", () => {
       );
     });
 
-    it("should include content-type header", async () => {
+    it("should include content-type header when body is present", async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ "content-type": "application/json" }),
-        json: async () => ({ user: { api_id: "user-123" } }),
+        text: async () =>
+          JSON.stringify({
+            webhook: { api_id: "wh-123", url: "https://example.com", event_types: [] },
+          }),
       });
 
-      await client.user.getSelf();
+      await client.webhook.create({
+        url: "https://example.com",
+        event_types: [],
+      });
 
       const calledOptions: unknown = mockFetch.mock.calls[0]?.[1];
       if (!hasHeaders(calledOptions)) {
@@ -404,6 +410,22 @@ describe("LumaClient", () => {
           "Content-Type": "application/json",
         })
       );
+    });
+
+    it("should not include content-type header when body is absent", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers({ "content-type": "application/json" }),
+        text: async () => JSON.stringify({ user: { api_id: "user-123" } }),
+      });
+
+      await client.user.getSelf();
+
+      const calledOptions: unknown = mockFetch.mock.calls[0]?.[1];
+      if (!hasHeaders(calledOptions)) {
+        throw new Error("Expected request options with headers.");
+      }
+      expect(calledOptions.headers).not.toHaveProperty("Content-Type");
     });
   });
 });
@@ -486,7 +508,7 @@ describe("parseRetryAfter", () => {
           "content-type": "application/json",
           "retry-after": futureDate.toUTCString(),
         }),
-        json: async () => ({ message: "Rate limit exceeded" }),
+        text: async () => JSON.stringify({ message: "Rate limit exceeded" }),
       });
 
       try {
@@ -513,7 +535,7 @@ describe("parseRetryAfter", () => {
         headers: new Headers({
           "content-type": "application/json",
         }),
-        json: async () => ({ message: "Rate limit exceeded" }),
+        text: async () => JSON.stringify({ message: "Rate limit exceeded" }),
       });
 
       try {
@@ -539,7 +561,7 @@ describe("parseRetryAfter", () => {
           "content-type": "application/json",
           "retry-after": "invalid-value",
         }),
-        json: async () => ({ message: "Rate limit exceeded" }),
+        text: async () => JSON.stringify({ message: "Rate limit exceeded" }),
       });
 
       try {

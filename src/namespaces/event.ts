@@ -1,53 +1,9 @@
 /**
- * Event namespace - bundles EventResource with event-related schemas
+ * Event namespace - bundles EventResource with event-related types
  */
 
 // Re-export the resource class
 export { EventResource } from '../client/resources/event.js'
-
-// Re-export event schemas
-export {
-  HostSchema,
-  EventSchema,
-  GetEventParamsSchema,
-  GetEventResponseSchema,
-  GuestSchema,
-  GetGuestParamsSchema,
-  GetGuestResponseSchema,
-  GetGuestsParamsSchema,
-  GetGuestsResponseSchema,
-  CreateEventRequestSchema,
-  CreateEventResponseSchema,
-  UpdateEventRequestSchema,
-  UpdateEventResponseSchema,
-  UpdateGuestStatusRequestSchema,
-  UpdateGuestStatusResponseSchema,
-  AddGuestInputSchema,
-  AddGuestsRequestSchema,
-  AddGuestsResponseSchema,
-  SendInvitesRequestSchema,
-  SendInvitesResponseSchema,
-  AddHostRequestSchema,
-  AddHostResponseSchema,
-  CouponSchema,
-  GetEventCouponsParamsSchema,
-  GetEventCouponsResponseSchema,
-  CreateEventCouponRequestSchema,
-  CreateEventCouponResponseSchema,
-  UpdateEventCouponRequestSchema,
-  UpdateEventCouponResponseSchema,
-  TicketTypeSchema,
-  ListTicketTypesParamsSchema,
-  ListTicketTypesResponseSchema,
-  GetTicketTypeParamsSchema,
-  GetTicketTypeResponseSchema,
-  CreateTicketTypeRequestSchema,
-  CreateTicketTypeResponseSchema,
-  UpdateTicketTypeRequestSchema,
-  UpdateTicketTypeResponseSchema,
-  DeleteTicketTypeRequestSchema,
-  DeleteTicketTypeResponseSchema,
-} from '../schemas/event.js'
 
 // Re-export event types
 export type {

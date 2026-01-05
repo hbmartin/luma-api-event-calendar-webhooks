@@ -1,21 +1,9 @@
 /**
- * Membership namespace - bundles MembershipResource with membership-related schemas
+ * Membership namespace - bundles MembershipResource with membership-related types
  */
 
 // Re-export the resource class
 export { MembershipResource } from '../client/resources/membership.js'
-
-// Re-export membership schemas
-export {
-  MembershipTierSchema,
-  ListMembershipTiersParamsSchema,
-  ListMembershipTiersResponseSchema,
-  MemberSchema,
-  AddMemberToTierRequestSchema,
-  AddMemberToTierResponseSchema,
-  UpdateMemberStatusRequestSchema,
-  UpdateMemberStatusResponseSchema,
-} from '../schemas/membership.js'
 
 // Re-export membership types
 export type {

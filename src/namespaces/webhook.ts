@@ -1,34 +1,12 @@
 /**
- * Webhook namespace - bundles WebhookResource with webhook-related schemas
+ * Webhook namespace - bundles WebhookResource with webhook-related types
  */
 
 // Re-export the resource class
 export { WebhookResource } from '../client/resources/webhook.js'
 
-// Re-export webhook schemas
-export {
-  WebhookSchema,
-  ListWebhooksParamsSchema,
-  ListWebhooksResponseSchema,
-  GetWebhookParamsSchema,
-  GetWebhookResponseSchema,
-  CreateWebhookRequestSchema,
-  CreateWebhookResponseSchema,
-  UpdateWebhookRequestSchema,
-  UpdateWebhookResponseSchema,
-  DeleteWebhookRequestSchema,
-  DeleteWebhookResponseSchema,
-  WebhookPayloadBaseSchema,
-  EventCreatedPayloadSchema,
-  EventUpdatedPayloadSchema,
-  GuestRegisteredPayloadSchema,
-  GuestUpdatedPayloadSchema,
-  TicketRegisteredPayloadSchema,
-  CalendarEventAddedPayloadSchema,
-  CalendarPersonSubscribedPayloadSchema,
-  WebhookPayloadSchema,
-  parseWebhookPayload,
-} from '../schemas/webhook.js'
+// Re-export utility functions
+export { parseWebhookPayload } from '../schemas/webhook.js'
 
 // Re-export webhook types
 export type {

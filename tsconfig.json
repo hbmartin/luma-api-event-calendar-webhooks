@@ -1,9 +1,19 @@
 {
-  "extends": "./tsconfig.base.json",
-  "compilerOptions": {
-    "noEmit": true,
-    "types": ["node"]
-  },
-  "include": ["src/**/*", "scripts"],
-  "exclude": ["dist_build", "coverage", "build", "node_modules", "demo", "tests", "**/*.spec.ts", "**/*.spec.tsx", "*.config.ts"]
+	"extends": "./tsconfig.base.json",
+	"compilerOptions": {
+		"noEmit": true,
+		"types": ["node"]
+	},
+	"include": ["src/**/*"],
+	"exclude": [
+		"dist_build",
+		"coverage",
+		"build",
+		"node_modules",
+		"demo",
+		"tests",
+		"**/*.spec.ts",
+		"**/*.spec.tsx",
+		"*.config.ts"
+	]
 }

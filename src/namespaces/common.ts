@@ -1,31 +1,10 @@
 /**
- * Common namespace - shared schemas, types, and utilities
+ * Common namespace - shared types and utilities
  */
 
-// Re-export common schemas and utilities
-export {
-  Pagination,
-  PaginationParamsSchema,
-  PaginatedResponseSchema,
-  GeoAddressJsonSchema,
-  SocialLinksSchema,
-  ThemeSchema,
-  PriceSchema,
-  ApiResponseSchema,
-  ApprovalStatusSchema,
-  GuestStatusSchema,
-  WebhookEventTypeSchema,
-  WebhookStatusSchema,
-  ImagePurposeSchema,
-  EntityTypeSchema,
-  SortDirectionSchema,
-  CouponDiscountTypeSchema,
-  LocationTypeSchema,
-  TicketVisibilitySchema,
-  TagColorSchema,
-  MembershipStatusSchema,
-  SuccessResponseSchema,
-} from '../schemas/common.js'
+// Re-export utility namespaces (contain both schemas and types for branded IDs and pagination)
+export { Pagination } from '../schemas/common.js'
+export { LumaId } from '../schemas/ids.js'
 
 // Re-export common types
 export type {
@@ -48,6 +27,3 @@ export type {
   MembershipStatus,
   SuccessResponse,
 } from '../schemas/common.js'
-
-// Re-export ID schemas and types
-export { LumaId } from '../schemas/ids.js'

@@ -52,16 +52,6 @@ export default defineConfig([
 				tsconfigRootDir: import.meta.dirname,
 			},
 		},
-		settings: {
-			"import/resolver": {
-				typescript: {
-					project: ["./tsconfig*.json"],
-				},
-				node: {
-					extensions: [".js", ".ts", ".tsx"],
-				},
-			},
-		},
 		rules: {
 			// === UNUSED IMPORTS DETECTION ===
 			"unused-imports/no-unused-imports": "error",

@@ -104,12 +104,6 @@ const isHeadersInstance = (headers: HeadersInit): headers is Headers => headers 
 const isHeadersArray = (headers: HeadersInit): headers is Array<[string, string]> =>
   Array.isArray(headers)
 
-const isHeadersRecord = (headers: HeadersInit): headers is Record<string, string> =>
-  typeof headers === 'object' &&
-  headers !== null &&
-  !Array.isArray(headers) &&
-  !(headers instanceof Headers)
-
 const recordFromHeadersInstance = (headers: Headers): Record<string, string> =>
   Object.fromEntries(headers)
 
@@ -125,25 +119,15 @@ const recordFromHeadersRecord = (headers: Record<string, string>): Record<string
   ...headers,
 })
 
-const headersInitToRecord = (headers: HeadersInit | undefined): Record<string, string> => {
-  if (headers === undefined) {
-    return {}
-  }
+const headersToRecord = (headers: HeadersInit): Record<string, string> =>
+  isHeadersInstance(headers)
+    ? recordFromHeadersInstance(headers)
+    : isHeadersArray(headers)
+      ? recordFromHeadersArray(headers)
+      : recordFromHeadersRecord(headers)
 
-  if (isHeadersInstance(headers)) {
-    return recordFromHeadersInstance(headers)
-  }
-
-  if (isHeadersArray(headers)) {
-    return recordFromHeadersArray(headers)
-  }
-
-  if (isHeadersRecord(headers)) {
-    return recordFromHeadersRecord(headers)
-  }
-
-  return {}
-}
+const headersInitToRecord = (headers: HeadersInit | undefined): Record<string, string> =>
+  headers === undefined ? {} : headersToRecord(headers)
 
 const normalizeQueryKey = (key: string): string => {
   if (key === 'cursor') {
@@ -378,41 +362,6 @@ const buildDebugRequest = ({
   ...(body !== undefined && { body }),
 })
 
-interface DebugResponseBaseParams {
-  response: Response
-  data: unknown
-}
-
-const buildDebugResponseBase = ({
-  response,
-  data,
-}: DebugResponseBaseParams): DebugResponseBase => ({
-  status: response.status,
-  headers: Object.fromEntries(response.headers),
-  body: data,
-})
-
-const buildDebugSuccessResponse = ({
-  response,
-  data,
-}: DebugResponseBaseParams): DebugSuccessResponse => ({
-  ...buildDebugResponseBase({ response, data }),
-  ok: true,
-})
-
-const buildDebugHttpErrorResponse = ({
-  response,
-  data,
-}: DebugResponseBaseParams): DebugHttpErrorResponse => ({
-  ...buildDebugResponseBase({ response, data }),
-  ok: false,
-})
-
-const buildDebugResponseOutcome = ({ response, data }: DebugResponseBaseParams): DebugOutcome =>
-  response.ok
-    ? { type: 'success', response: buildDebugSuccessResponse({ response, data }) }
-    : { type: 'http-error', response: buildDebugHttpErrorResponse({ response, data }) }
-
 interface DebugResponseContextParams {
   request: DebugRequest
   response: Response
@@ -427,7 +376,25 @@ const buildDebugResponseContext = ({
   durationMs,
 }: DebugResponseContextParams): DebugContext => ({
   request,
-  outcome: buildDebugResponseOutcome({ response, data }),
+  outcome: response.ok
+    ? {
+        type: 'success',
+        response: {
+          status: response.status,
+          headers: Object.fromEntries(response.headers),
+          body: data,
+          ok: true,
+        },
+      }
+    : {
+        type: 'http-error',
+        response: {
+          status: response.status,
+          headers: Object.fromEntries(response.headers),
+          body: data,
+          ok: false,
+        },
+      },
   durationMs,
 })
 
@@ -450,17 +417,24 @@ const buildDebugNetworkErrorContext = ({
   durationMs,
 })
 
+const logDebugHookError = (error: unknown): void => {
+  console.error('Luma debug hook error', error)
+}
+
+const invokeDebug = (debug: DebugHook, context: DebugContext): void => {
+  try {
+    debug(context)
+  } catch (error: unknown) {
+    logDebugHookError(error)
+  }
+}
+
 const safelyInvokeDebug = (debug: DebugHook | undefined, context: DebugContext): void => {
   if (debug === undefined) {
     return
   }
 
-  try {
-    debug(context)
-  } catch (error: unknown) {
-    // Ignore debug hook errors to avoid masking the response flow.
-    void error
-  }
+  invokeDebug(debug, context)
 }
 
 interface ExecuteRequestParams<T> {

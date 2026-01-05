@@ -808,6 +808,7 @@ describe("LumaClient", () => {
       const debugSpy = vi.fn<[DebugContext], void>(() => {
         throw new Error("debug failure");
       });
+      const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
       const debugClient = new LumaClient({
         apiKey: "test-api-key",
         debug: debugSpy,
@@ -820,14 +821,21 @@ describe("LumaClient", () => {
         text: async () => JSON.stringify({ user: { api_id: "user-123" } }),
       });
 
-      await expect(debugClient.user.getSelf()).resolves.toBeDefined();
-      expect(debugSpy).toHaveBeenCalledTimes(1);
+      try {
+        await expect(debugClient.user.getSelf()).resolves.toBeDefined();
+        expect(debugSpy).toHaveBeenCalledTimes(1);
+        expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+        expect(consoleErrorSpy).toHaveBeenCalledWith("Luma debug hook error", expect.any(Error));
+      } finally {
+        consoleErrorSpy.mockRestore();
+      }
     });
 
     it("should not let debug hook errors override API errors", async () => {
       const debugSpy = vi.fn<[DebugContext], void>(() => {
         throw new Error("debug failure");
       });
+      const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
       const debugClient = new LumaClient({
         apiKey: "test-api-key",
         debug: debugSpy,
@@ -840,14 +848,21 @@ describe("LumaClient", () => {
         text: async () => JSON.stringify({ message: "Invalid API key" }),
       });
 
-      await expect(debugClient.user.getSelf()).rejects.toThrow(LumaAuthenticationError);
-      expect(debugSpy).toHaveBeenCalledTimes(1);
+      try {
+        await expect(debugClient.user.getSelf()).rejects.toThrow(LumaAuthenticationError);
+        expect(debugSpy).toHaveBeenCalledTimes(1);
+        expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+        expect(consoleErrorSpy).toHaveBeenCalledWith("Luma debug hook error", expect.any(Error));
+      } finally {
+        consoleErrorSpy.mockRestore();
+      }
     });
 
     it("should not let debug hook errors override network errors", async () => {
       const debugSpy = vi.fn<[DebugContext], void>(() => {
         throw new Error("debug failure");
       });
+      const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
       const debugClient = new LumaClient({
         apiKey: "test-api-key",
         debug: debugSpy,
@@ -855,8 +870,14 @@ describe("LumaClient", () => {
 
       mockFetch.mockRejectedValueOnce(new Error("Network error"));
 
-      await expect(debugClient.user.getSelf()).rejects.toThrow(LumaNetworkError);
-      expect(debugSpy).toHaveBeenCalledTimes(1);
+      try {
+        await expect(debugClient.user.getSelf()).rejects.toThrow(LumaNetworkError);
+        expect(debugSpy).toHaveBeenCalledTimes(1);
+        expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+        expect(consoleErrorSpy).toHaveBeenCalledWith("Luma debug hook error", expect.any(Error));
+      } finally {
+        consoleErrorSpy.mockRestore();
+      }
     });
   });
 });

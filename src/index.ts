@@ -6,6 +6,11 @@ export type {
   FetcherOptions,
   RequestOptions,
   FetcherConfig,
+  DebugContext,
+  DebugHook,
+  DebugRequest,
+  DebugResponse,
+  DebugOutcome,
 } from './client/index.js'
 
 // Error exports

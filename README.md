@@ -8,6 +8,7 @@ A TypeScript client for the Luma public API with first-class support for events,
 - Zod-validated responses and exportable schemas
 - Webhook configuration + payload parsing for incoming events
 - Built-in error classes with rate limit handling
+- Debug hook for request/response logging
 - ESM + CJS builds with TypeScript types
 
 ## Requirements
@@ -72,6 +73,33 @@ const client = new LumaClient({
 Authentication uses the `x-luma-api-key` header. Luma docs include a simple curl example:
 https://docs.luma.com/reference/getting-started-with-your-api
 
+## Debug Hook
+
+Add a `debug` callback to log all requests and responses for debugging:
+
+```ts
+import { LumaClient, type DebugContext } from 'luma-api-event-calendar-webhooks'
+
+const client = new LumaClient({
+  apiKey: process.env.LUMA_API_KEY!,
+  debug: (ctx: DebugContext) => {
+    console.log(`${ctx.request.method} ${ctx.request.url} [${ctx.durationMs}ms]`)
+
+    if (ctx.outcome.type === 'success') {
+      console.log(`Status: ${ctx.outcome.response.status}`)
+    } else {
+      console.log(`Error: ${ctx.outcome.error.message}`)
+    }
+  },
+})
+```
+
+The debug hook is called after each request completes with:
+
+- `request`: Method, URL, headers, and body (for POST/PUT/PATCH)
+- `outcome`: Either `{ type: 'success', response }` with status/headers/body, or `{ type: 'error', error }` for network failures
+- `durationMs`: Request duration in milliseconds
+
 ## Resources
 
 All methods are thin wrappers around the Luma REST endpoints. Request/response types are exported and validated.
@@ -100,9 +128,23 @@ All methods are thin wrappers around the Luma REST endpoints. Request/response t
 
 For full request/response shapes, use the exported schemas and types.
 
-## Using Schemas
+## Using Types and Schemas
 
-The library exports all Zod schemas and TypeScript types under the `Schemas` namespace.
+Types are exported via resource namespaces for clean imports:
+
+```ts
+import { Event, Calendar, Webhook } from 'luma-api-event-calendar-webhooks'
+
+// Use types from namespaces
+type MyEvent = Event.Event
+type MyGuest = Event.Guest
+type CalendarEntry = Calendar.CalendarEventEntry
+
+// Webhook namespace includes the parseWebhookPayload utility
+const payload = Webhook.parseWebhookPayload(requestBody)
+```
+
+For Zod schemas, use the `Schemas` namespace:
 
 ```ts
 import { Schemas } from 'luma-api-event-calendar-webhooks'
@@ -115,9 +157,9 @@ const parsed = Schemas.GetEventResponseSchema.parse(apiResponse)
 Incoming webhook payloads can be validated and narrowed by `type`.
 
 ```ts
-import { Schemas } from 'luma-api-event-calendar-webhooks'
+import { Webhook } from 'luma-api-event-calendar-webhooks'
 
-const payload = Schemas.parseWebhookPayload(requestBody)
+const payload = Webhook.parseWebhookPayload(requestBody)
 
 switch (payload.type) {
   case 'event.created':

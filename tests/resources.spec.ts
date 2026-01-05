@@ -670,6 +670,33 @@ describe('CalendarResource', () => {
 
       expect(result.success).toBe(true)
     })
+
+    it('should throw LumaNetworkError when fetch rejects', async () => {
+      mockFetch.mockRejectedValueOnce(new Error('SSL handshake failed'))
+
+      await expect(
+        client.calendar.applyPersonTag({
+          tag_api_id: 'tag-1',
+          user_api_ids: ['user-1'],
+        })
+      ).rejects.toThrow(LumaNetworkError)
+    })
+
+    it('should throw LumaApiError when response is not ok', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        text: async () => JSON.stringify({ message: 'Invalid tag' }),
+      })
+
+      await expect(
+        client.calendar.applyPersonTag({
+          tag_api_id: 'invalid-tag',
+          user_api_ids: ['user-1'],
+        })
+      ).rejects.toThrow(LumaApiError)
+    })
   })
 
   describe('removePersonTag', () => {
@@ -692,6 +719,33 @@ describe('CalendarResource', () => {
         expect.objectContaining({ method: 'POST' })
       )
       expect(result.success).toBe(true)
+    })
+
+    it('should throw LumaNetworkError when fetch rejects', async () => {
+      mockFetch.mockRejectedValueOnce(new Error('Fetch aborted'))
+
+      await expect(
+        client.calendar.removePersonTag({
+          tag_api_id: 'tag-1',
+          user_api_ids: ['user-1'],
+        })
+      ).rejects.toThrow(LumaNetworkError)
+    })
+
+    it('should throw LumaApiError when response is not ok', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        text: async () => JSON.stringify({ message: 'Internal error' }),
+      })
+
+      await expect(
+        client.calendar.removePersonTag({
+          tag_api_id: 'tag-1',
+          user_api_ids: ['user-1'],
+        })
+      ).rejects.toThrow(LumaApiError)
     })
   })
 })

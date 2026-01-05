@@ -309,6 +309,55 @@ describe("LumaClient", () => {
 
       await expect(client.user.getSelf()).rejects.toThrow(LumaValidationError);
     });
+
+    it("should handle invalid JSON response gracefully", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers({ "content-type": "application/json" }),
+        text: async () => "{ invalid json }",
+      });
+
+      await expect(client.user.getSelf()).rejects.toThrow(LumaValidationError);
+    });
+
+    it("should handle empty response body", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers({ "content-type": "application/json" }),
+        text: async () => "",
+      });
+
+      await expect(client.user.getSelf()).rejects.toThrow(LumaValidationError);
+    });
+
+    it("should handle non-JSON content type response", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers({ "content-type": "text/plain" }),
+        text: async () => "Plain text response",
+      });
+
+      await expect(client.user.getSelf()).rejects.toThrow(LumaValidationError);
+    });
+
+    it("should use fallback error message when response has no message field", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        headers: new Headers({ "content-type": "application/json" }),
+        text: async () => JSON.stringify({ error: "no message field" }),
+      });
+
+      try {
+        await client.user.getSelf();
+        throw new Error("Expected error to be thrown");
+      } catch (error) {
+        expect(error).toBeInstanceOf(LumaApiError);
+        if (error instanceof LumaApiError) {
+          expect(error.message).toBe("Request failed with status 500");
+        }
+      }
+    });
   });
 
   describe("query parameters", () => {

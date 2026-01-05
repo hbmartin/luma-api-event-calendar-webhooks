@@ -570,8 +570,8 @@ describe("LumaClient", () => {
 
       expect(debugSpy).toHaveBeenCalledTimes(1);
       const context = debugSpy.mock.calls[0]![0];
-      expect(context.outcome.type).toBe("success");
-      if (context.outcome.type === "success") {
+      expect(context.outcome.type).toBe("http-error");
+      if (context.outcome.type === "http-error") {
         expect(context.outcome.response.status).toBe(401);
         expect(context.outcome.response.ok).toBe(false);
       }
@@ -597,8 +597,8 @@ describe("LumaClient", () => {
 
       expect(debugSpy).toHaveBeenCalledTimes(1);
       const context = debugSpy.mock.calls[0]![0];
-      expect(context.outcome.type).toBe("success");
-      if (context.outcome.type === "success") {
+      expect(context.outcome.type).toBe("http-error");
+      if (context.outcome.type === "http-error") {
         expect(context.outcome.response.status).toBe(404);
       }
     });
@@ -624,8 +624,8 @@ describe("LumaClient", () => {
 
       expect(debugSpy).toHaveBeenCalledTimes(1);
       const context = debugSpy.mock.calls[0]![0];
-      expect(context.outcome.type).toBe("success");
-      if (context.outcome.type === "success") {
+      expect(context.outcome.type).toBe("http-error");
+      if (context.outcome.type === "http-error") {
         expect(context.outcome.response.status).toBe(429);
         expect(context.outcome.response.headers["retry-after"]).toBe("60");
       }
@@ -644,8 +644,8 @@ describe("LumaClient", () => {
 
       expect(debugSpy).toHaveBeenCalledTimes(1);
       const context = debugSpy.mock.calls[0]![0];
-      expect(context.outcome.type).toBe("error");
-      if (context.outcome.type === "error") {
+      expect(context.outcome.type).toBe("network-error");
+      if (context.outcome.type === "network-error") {
         expect(context.outcome.error).toBeInstanceOf(LumaNetworkError);
         expect(context.outcome.error.message).toBe("Network error");
       }
@@ -684,8 +684,8 @@ describe("LumaClient", () => {
 
       expect(debugSpy).toHaveBeenCalledTimes(1);
       const context = debugSpy.mock.calls[0]![0];
-      expect(context.outcome.type).toBe("error");
-      if (context.outcome.type === "error") {
+      expect(context.outcome.type).toBe("network-error");
+      if (context.outcome.type === "network-error") {
         expect(context.outcome.error).toBeInstanceOf(LumaNetworkError);
         expect(context.outcome.error.message).toContain("timed out");
       }
@@ -802,6 +802,61 @@ describe("LumaClient", () => {
       // Allow some tolerance for test execution overhead
       expect(context.durationMs).toBeGreaterThanOrEqual(delay - 10);
       expect(context.durationMs).toBeLessThan(delay + 100);
+    });
+
+    it("should not let debug hook errors break successful requests", async () => {
+      const debugSpy = vi.fn<[DebugContext], void>(() => {
+        throw new Error("debug failure");
+      });
+      const debugClient = new LumaClient({
+        apiKey: "test-api-key",
+        debug: debugSpy,
+      });
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: new Headers({ "content-type": "application/json" }),
+        text: async () => JSON.stringify({ user: { api_id: "user-123" } }),
+      });
+
+      await expect(debugClient.user.getSelf()).resolves.toBeDefined();
+      expect(debugSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it("should not let debug hook errors override API errors", async () => {
+      const debugSpy = vi.fn<[DebugContext], void>(() => {
+        throw new Error("debug failure");
+      });
+      const debugClient = new LumaClient({
+        apiKey: "test-api-key",
+        debug: debugSpy,
+      });
+
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        headers: new Headers({ "content-type": "application/json" }),
+        text: async () => JSON.stringify({ message: "Invalid API key" }),
+      });
+
+      await expect(debugClient.user.getSelf()).rejects.toThrow(LumaAuthenticationError);
+      expect(debugSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it("should not let debug hook errors override network errors", async () => {
+      const debugSpy = vi.fn<[DebugContext], void>(() => {
+        throw new Error("debug failure");
+      });
+      const debugClient = new LumaClient({
+        apiKey: "test-api-key",
+        debug: debugSpy,
+      });
+
+      mockFetch.mockRejectedValueOnce(new Error("Network error"));
+
+      await expect(debugClient.user.getSelf()).rejects.toThrow(LumaNetworkError);
+      expect(debugSpy).toHaveBeenCalledTimes(1);
     });
   });
 });

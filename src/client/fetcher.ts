@@ -18,16 +18,40 @@ export interface DebugRequest {
   body?: unknown
 }
 
-export interface DebugResponse {
+export interface DebugResponseBase {
   status: number
-  ok: boolean
   headers: Record<string, string>
   body: unknown
 }
 
-export type DebugOutcome =
-  | { type: 'success'; response: DebugResponse }
-  | { type: 'error'; error: Error }
+export interface DebugResponse extends DebugResponseBase {
+  ok: boolean
+}
+
+export interface DebugSuccessResponse extends DebugResponse {
+  ok: true
+}
+
+export interface DebugHttpErrorResponse extends DebugResponse {
+  ok: false
+}
+
+export interface DebugSuccessOutcome {
+  type: 'success'
+  response: DebugSuccessResponse
+}
+
+export interface DebugHttpErrorOutcome {
+  type: 'http-error'
+  response: DebugHttpErrorResponse
+}
+
+export interface DebugNetworkErrorOutcome {
+  type: 'network-error'
+  error: LumaNetworkError
+}
+
+export type DebugOutcome = DebugSuccessOutcome | DebugHttpErrorOutcome | DebugNetworkErrorOutcome
 
 export interface DebugContext {
   request: DebugRequest
@@ -75,12 +99,50 @@ const hasMessage = (value: unknown): value is ErrorPayload => {
   return 'message' in value
 }
 
-const headersToRecord = (headers: Headers): Record<string, string> => {
+const isHeadersInstance = (headers: HeadersInit): headers is Headers => headers instanceof Headers
+
+const isHeadersArray = (headers: HeadersInit): headers is Array<[string, string]> =>
+  Array.isArray(headers)
+
+const isHeadersRecord = (headers: HeadersInit): headers is Record<string, string> =>
+  typeof headers === 'object' &&
+  headers !== null &&
+  !Array.isArray(headers) &&
+  !(headers instanceof Headers)
+
+const recordFromHeadersInstance = (headers: Headers): Record<string, string> =>
+  Object.fromEntries(headers)
+
+const recordFromHeadersArray = (headers: Array<[string, string]>): Record<string, string> => {
   const record: Record<string, string> = {}
-  headers.forEach((value, key) => {
+  for (const [key, value] of headers) {
     record[key] = value
-  })
+  }
   return record
+}
+
+const recordFromHeadersRecord = (headers: Record<string, string>): Record<string, string> => ({
+  ...headers,
+})
+
+const headersInitToRecord = (headers: HeadersInit | undefined): Record<string, string> => {
+  if (headers === undefined) {
+    return {}
+  }
+
+  if (isHeadersInstance(headers)) {
+    return recordFromHeadersInstance(headers)
+  }
+
+  if (isHeadersArray(headers)) {
+    return recordFromHeadersArray(headers)
+  }
+
+  if (isHeadersRecord(headers)) {
+    return recordFromHeadersRecord(headers)
+  }
+
+  return {}
 }
 
 const normalizeQueryKey = (key: string): string => {
@@ -108,13 +170,8 @@ const isNegativeNumber = (value: string): boolean => /^-\d+$/.test(value)
 
 const parseNumericRetryAfter = (value: string): number | undefined => {
   const trimmed = value.trim()
-
-  if (!isNumericRetryAfter(trimmed)) {
-    return undefined
-  }
-
   const numericValue = Number.parseInt(trimmed, 10)
-  if (!Number.isFinite(numericValue)) {
+  if (!isNumericRetryAfter(trimmed) || !Number.isFinite(numericValue)) {
     return undefined
   }
 
@@ -156,20 +213,39 @@ const parseJsonSafe = (text: string): unknown => {
 
 const JSON_CONTENT_TYPE_PATTERN = /application\/(?:json|[^;]*\+json)/
 
-const parseResponsePayload = async (response: Response): Promise<unknown> => {
-  const text = await response.text()
+const isJsonContentType = (contentType: string | null): boolean =>
+  contentType !== null && JSON_CONTENT_TYPE_PATTERN.test(contentType)
 
+interface ParsePayloadByContentTypeParams {
+  text: string
+  contentType: string | null
+}
+
+const parsePayloadByContentType = ({
+  text,
+  contentType,
+}: ParsePayloadByContentTypeParams): unknown =>
+  isJsonContentType(contentType) ? parseJsonSafe(text) : text
+
+interface ParseResponseTextParams {
+  text: string
+  contentType: string | null
+}
+
+const parseResponseText = ({ text, contentType }: ParseResponseTextParams): unknown => {
   if (text.length === 0) {
     return null
   }
 
-  const contentType = response.headers.get('content-type')
+  return parsePayloadByContentType({ text, contentType })
+}
 
-  if (contentType !== null && JSON_CONTENT_TYPE_PATTERN.test(contentType)) {
-    return parseJsonSafe(text)
-  }
-
-  return text
+const parseResponsePayload = async (response: Response): Promise<unknown> => {
+  const text = await response.text()
+  return parseResponseText({
+    text,
+    contentType: response.headers.get('content-type'),
+  })
 }
 
 const parseSchemaResult = <T>(schema: ZodType<T>, data: unknown): T => {
@@ -283,6 +359,183 @@ function buildUrl(baseUrl: string, path: string, query?: QueryParams): string {
   return url.toString()
 }
 
+interface BuildDebugRequestParams {
+  method: RequestOptions['method']
+  url: string
+  headers: HeadersInit | undefined
+  body?: unknown
+}
+
+const buildDebugRequest = ({
+  method,
+  url,
+  headers,
+  body,
+}: BuildDebugRequestParams): DebugRequest => ({
+  method,
+  url,
+  headers: headersInitToRecord(headers),
+  ...(body !== undefined && { body }),
+})
+
+interface DebugResponseBaseParams {
+  response: Response
+  data: unknown
+}
+
+const buildDebugResponseBase = ({
+  response,
+  data,
+}: DebugResponseBaseParams): DebugResponseBase => ({
+  status: response.status,
+  headers: Object.fromEntries(response.headers),
+  body: data,
+})
+
+const buildDebugSuccessResponse = ({
+  response,
+  data,
+}: DebugResponseBaseParams): DebugSuccessResponse => ({
+  ...buildDebugResponseBase({ response, data }),
+  ok: true,
+})
+
+const buildDebugHttpErrorResponse = ({
+  response,
+  data,
+}: DebugResponseBaseParams): DebugHttpErrorResponse => ({
+  ...buildDebugResponseBase({ response, data }),
+  ok: false,
+})
+
+const buildDebugResponseOutcome = ({ response, data }: DebugResponseBaseParams): DebugOutcome =>
+  response.ok
+    ? { type: 'success', response: buildDebugSuccessResponse({ response, data }) }
+    : { type: 'http-error', response: buildDebugHttpErrorResponse({ response, data }) }
+
+interface DebugResponseContextParams {
+  request: DebugRequest
+  response: Response
+  data: unknown
+  durationMs: number
+}
+
+const buildDebugResponseContext = ({
+  request,
+  response,
+  data,
+  durationMs,
+}: DebugResponseContextParams): DebugContext => ({
+  request,
+  outcome: buildDebugResponseOutcome({ response, data }),
+  durationMs,
+})
+
+interface DebugNetworkErrorContextParams {
+  request: DebugRequest
+  error: LumaNetworkError
+  durationMs: number
+}
+
+const buildDebugNetworkErrorContext = ({
+  request,
+  error,
+  durationMs,
+}: DebugNetworkErrorContextParams): DebugContext => ({
+  request,
+  outcome: {
+    type: 'network-error',
+    error,
+  },
+  durationMs,
+})
+
+const safelyInvokeDebug = (debug: DebugHook | undefined, context: DebugContext): void => {
+  if (debug === undefined) {
+    return
+  }
+
+  try {
+    debug(context)
+  } catch (error: unknown) {
+    // Ignore debug hook errors to avoid masking the response flow.
+    void error
+  }
+}
+
+interface ExecuteRequestParams<T> {
+  url: string
+  init: RequestInit
+  timeoutMs: number
+  schema: ZodType<T>
+  debugRequest: DebugRequest
+  debug?: DebugHook
+  startTimeMs: number
+}
+
+const executeRequest = async <T>({
+  url,
+  init,
+  timeoutMs,
+  schema,
+  debugRequest,
+  debug,
+  startTimeMs,
+}: ExecuteRequestParams<T>): Promise<T> =>
+  withTimeout(timeoutMs, async (signal) => {
+    const response = await fetch(url, { ...init, signal })
+    const data = await parseResponsePayload(response)
+
+    safelyInvokeDebug(
+      debug,
+      buildDebugResponseContext({
+        request: debugRequest,
+        response,
+        data,
+        durationMs: Date.now() - startTimeMs,
+      })
+    )
+
+    if (response.ok) {
+      return parseSchemaResult(schema, data)
+    }
+
+    return throwForResponseStatus(response, data)
+  })
+
+interface HandleRequestErrorParams {
+  error: unknown
+  timeoutMs: number
+  debugRequest: DebugRequest
+  debug?: DebugHook
+  startTimeMs: number
+}
+
+const handleRequestError = ({
+  error,
+  timeoutMs,
+  debugRequest,
+  debug,
+  startTimeMs,
+}: HandleRequestErrorParams): never => {
+  const mappedError = mapRequestError(error, timeoutMs)
+
+  // Only call debug for actual network/timeout errors, not HTTP errors.
+  // (HTTP errors already triggered a debug call with the response.)
+  if (mappedError instanceof LumaNetworkError) {
+    safelyInvokeDebug(
+      debug,
+      buildDebugNetworkErrorContext({
+        request: debugRequest,
+        error: mappedError,
+        durationMs: Date.now() - startTimeMs,
+      })
+    )
+  }
+
+  throw mappedError
+}
+
 export function createFetcher(options: FetcherOptions) {
   const config: FetcherConfig = {
     apiKey: options.apiKey,
@@ -296,57 +549,33 @@ export function createFetcher(options: FetcherOptions) {
     const url = buildUrl(config.baseUrl, path, query)
     const init = buildRequestInit(config.apiKey, { method, body })
 
-    const debugRequest: DebugRequest = {
+    const debugRequest = buildDebugRequest({
       method,
       url,
-      headers: init.headers as Record<string, string>,
-      ...(body !== undefined && { body }),
-    }
+      headers: init.headers,
+      body,
+    })
 
-    const startTime = Date.now()
+    const startTimeMs = Date.now()
 
     try {
-      return await withTimeout(config.timeout, async (signal) => {
-        const response = await fetch(url, { ...init, signal })
-        const data = await parseResponsePayload(response)
-
-        config.debug?.({
-          request: debugRequest,
-          outcome: {
-            type: 'success',
-            response: {
-              status: response.status,
-              ok: response.ok,
-              headers: headersToRecord(response.headers),
-              body: data,
-            },
-          },
-          durationMs: Date.now() - startTime,
-        })
-
-        if (response.ok) {
-          return parseSchemaResult(schema, data)
-        }
-
-        return throwForResponseStatus(response, data)
+      return await executeRequest({
+        url,
+        init,
+        timeoutMs: config.timeout,
+        schema,
+        debugRequest,
+        debug: config.debug,
+        startTimeMs,
       })
     } catch (error: unknown) {
-      const mappedError = mapRequestError(error, config.timeout)
-
-      // Only call debug for actual network/timeout errors, not API errors
-      // (API errors already triggered a debug call with the response)
-      if (mappedError instanceof LumaNetworkError) {
-        config.debug?.({
-          request: debugRequest,
-          outcome: {
-            type: 'error',
-            error: mappedError,
-          },
-          durationMs: Date.now() - startTime,
-        })
-      }
-
-      throw mappedError
+      return handleRequestError({
+        error,
+        timeoutMs: config.timeout,
+        debugRequest,
+        debug: config.debug,
+        startTimeMs,
+      })
     }
   }
 

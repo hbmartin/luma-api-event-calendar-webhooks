@@ -4,7 +4,7 @@ Search and browse https://docs.luma.com/ for information.
 
 ## Working Guide
 - After adding any code or functionality, write thorough unit tests (using vitest) and check coverage.
-- After making any changes always execute `pnpm format && pnpm build && pnpm test` to verify
+- After making any changes always execute `pnpm format && pnpm lint && pnpm build && pnpm test` to verify
 - Fix any pnpm format issues (even if they are unrelated)
 - never run publint with pnpm, instead always use `npx publint --pack npm`
 - One file = one purpose (no 800-line “service.ts”).

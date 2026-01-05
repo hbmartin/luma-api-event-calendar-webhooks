@@ -9,7 +9,7 @@ import {
   SortDirectionSchema,
   TicketVisibilitySchema,
 } from './common.js'
-import { LumaId } from './ids.js'
+import * as LumaId from './ids.js'
 
 // Host schema
 export const HostSchema = z.object({

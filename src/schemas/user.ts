@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { LumaId } from './ids.js'
+import * as LumaId from './ids.js'
 
 // User schema
 export const UserSchema = z.object({

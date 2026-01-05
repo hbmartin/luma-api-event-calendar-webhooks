@@ -36,8 +36,8 @@ importers:
         specifier: ^2.32.0
         version: 2.32.0(@typescript-eslint/parser@8.51.0(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3))(eslint@9.39.2(jiti@2.6.1))
       eslint-plugin-package-json:
-        specifier: ^0.87.1
-        version: 0.87.1(@types/estree@1.0.8)(eslint@9.39.2(jiti@2.6.1))(jsonc-eslint-parser@2.4.2)
+        specifier: ^0.88.0
+        version: 0.88.0(@types/estree@1.0.8)(eslint@9.39.2(jiti@2.6.1))(jsonc-eslint-parser@2.4.2)
       eslint-plugin-prettier:
         specifier: ^5.5.4
         version: 5.5.4(eslint-config-prettier@10.1.8(eslint@9.39.2(jiti@2.6.1)))(eslint@9.39.2(jiti@2.6.1))(prettier@3.7.4)
@@ -93,8 +93,8 @@ importers:
         specifier: ^4.0.16
         version: 4.0.16(@types/node@24.10.4)(jiti@2.6.1)
       zod:
-        specifier: ^4.3.4
-        version: 4.3.4
+        specifier: ^4.3.5
+        version: 4.3.5
 
 packages:
 
@@ -1050,8 +1050,8 @@ packages:
       '@typescript-eslint/parser':
         optional: true
 
-  eslint-plugin-package-json@0.87.1:
-    resolution: {integrity: sha512-aHOUGdpHrPDji64xwAsspXvfjwgeksARxM2SqzhusSEUCyLr0GX0oNe9hDDPMQ2CKPlKjTPKFhzmsQNIO0aWiQ==}
+  eslint-plugin-package-json@0.88.0:
+    resolution: {integrity: sha512-cu3/rvFDKbVSzmtjP4bS4oqyLDLVHXG7clJG3TS/U7g+JUWb1/yQ3l2a6W1aFLQiS9gmD2/qvNCTbIlHC33q2A==}
     engines: {node: ^20.19.0 || >=22.12.0}
     peerDependencies:
       eslint: '>=8.0.0'
@@ -2288,8 +2288,8 @@ packages:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
 
-  zod@4.3.4:
-    resolution: {integrity: sha512-Zw/uYiiyF6pUT1qmKbZziChgNPRu+ZRneAsMUDU6IwmXdWt5JwcUfy2bvLOCUtz5UniaN/Zx5aFttZYbYc7O/A==}
+  zod@4.3.5:
+    resolution: {integrity: sha512-k7Nwx6vuWx1IJ9Bjuf4Zt1PEllcwe7cls3VNzm4CQ1/hgtFUK2bRNG3rvnpPUhFjmqJKAKtjV576KnUkHocg/g==}
 
 snapshots:
 
@@ -3239,7 +3239,7 @@ snapshots:
       - eslint-import-resolver-webpack
       - supports-color
 
-  eslint-plugin-package-json@0.87.1(@types/estree@1.0.8)(eslint@9.39.2(jiti@2.6.1))(jsonc-eslint-parser@2.4.2):
+  eslint-plugin-package-json@0.88.0(@types/estree@1.0.8)(eslint@9.39.2(jiti@2.6.1))(jsonc-eslint-parser@2.4.2):
     dependencies:
       '@altano/repository-tools': 2.0.1
       change-case: 5.4.4
@@ -4577,4 +4577,4 @@ snapshots:
 
   yocto-queue@0.1.0: {}
 
-  zod@4.3.4: {}
+  zod@4.3.5: {}

@@ -45,7 +45,24 @@ export type {
 } from './common.js'
 
 // ID schemas and types
-export { LumaId } from './ids.js'
+export * as LumaId from './ids.js'
+export type {
+  CalendarId,
+  CalendarEventEntryApiId,
+  CouponApiId,
+  EntityApiId,
+  EventApiId,
+  GuestApiId,
+  HostApiId,
+  MemberApiId,
+  MembershipTierApiId,
+  PersonApiId,
+  PersonTagApiId,
+  SeriesApiId,
+  TicketTypeApiId,
+  UserApiId,
+  WebhookApiId,
+} from './ids.js'
 
 // User schemas and types
 export { UserSchema, GetSelfResponseSchema } from './user.js'

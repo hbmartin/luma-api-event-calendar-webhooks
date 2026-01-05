@@ -16,7 +16,7 @@ on:
     branches: ["main", "codeQlAct"]
   pull_request:
     # The branches below must be a subset of the branches above
-    branches: ["main" ,"codeQlAct"]
+    branches: ["main", "codeQlAct"]
   schedule:
     - cron: '45 7 * * 0' #At 07:45 on Sunday.
 

@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { EntityTypeSchema } from './common.js'
-import { LumaId } from './ids.js'
+import * as LumaId from './ids.js'
 
 // Entity lookup request params
 export const LookupEntityParamsSchema = z.object({

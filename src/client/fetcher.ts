@@ -8,6 +8,7 @@ import {
   LumaRateLimitError,
   LumaValidationError,
 } from '../errors.js'
+import { randomUUID } from 'crypto'
 
 export const BASE_URL = 'https://public-api.luma.com'
 
@@ -428,20 +429,19 @@ const logDebugHookError = (error: unknown): void => {
   console.error('Luma debug hook error', error)
 }
 
-const invokeDebug = (debug: DebugHook, context: DebugContext): void => {
-  try {
-    Promise.resolve(debug(context)).catch(logDebugHookError)
-  } catch (error: unknown) {
-    logDebugHookError(error)
-  }
-}
-
-const safelyInvokeDebug = (debug: DebugHook | undefined, context: DebugContext): void => {
+const safelyInvokeDebug = async (
+  debug: DebugHook | undefined,
+  context: DebugContext
+): Promise<void> => {
   if (debug === undefined) {
-    return
+    return Promise.resolve()
   }
 
-  invokeDebug(debug, context)
+  try {
+    return await Promise.resolve(debug(context))
+  } catch (error) {
+    return logDebugHookError(error)
+  }
 }
 
 interface ExecuteRequestParams<T> {
@@ -532,7 +532,7 @@ export function createFetcher(options: FetcherOptions) {
   }
 
   async function request<T>(requestOptions: RequestOptions, schema: ZodType<T>): Promise<T> {
-    const requestId = crypto.randomUUID()
+    const requestId = randomUUID()
     const { method, path, query, body } = requestOptions
     const url = buildUrl(config.baseUrl, path, query)
     const init = buildRequestInit(config.apiKey, { method, body })

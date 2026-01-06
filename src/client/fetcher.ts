@@ -54,6 +54,7 @@ export interface DebugNetworkErrorOutcome {
 export type DebugOutcome = DebugSuccessOutcome | DebugHttpErrorOutcome | DebugNetworkErrorOutcome
 
 export interface DebugContext {
+  requestId: string
   request: DebugRequest
   outcome: DebugOutcome
   durationMs: number
@@ -232,10 +233,10 @@ const parseResponsePayload = async (response: Response): Promise<unknown> => {
   })
 }
 
-const parseSchemaResult = <T>(schema: ZodType<T>, data: unknown): T => {
+const parseSchemaResult = <T>(schema: ZodType<T>, data: unknown, requestId: string): T => {
   const result = schema.safeParse(data)
   if (!result.success) {
-    throw new LumaValidationError(result.error)
+    throw new LumaValidationError(result.error, requestId)
   }
 
   return result.data
@@ -249,22 +250,22 @@ const getResponseMessage = (data: unknown, status: number): string => {
   return `Request failed with status ${status}`
 }
 
-const throwForResponseStatus = (response: Response, data: unknown): never => {
+const throwForResponseStatus = (response: Response, data: unknown, requestId: string): never => {
   const message = getResponseMessage(data, response.status)
 
   switch (response.status) {
     case 401: {
-      throw new LumaAuthenticationError(message, data)
+      throw new LumaAuthenticationError(message, data, requestId)
     }
     case 404: {
-      throw new LumaNotFoundError(message, data)
+      throw new LumaNotFoundError(message, data, requestId)
     }
     case 429: {
       const retryAfter = parseRetryAfter(response.headers.get('retry-after'))
-      throw new LumaRateLimitError(message, retryAfter, data)
+      throw new LumaRateLimitError(message, retryAfter, data, requestId)
     }
     default: {
-      throw new LumaApiError(message, response.status, data)
+      throw new LumaApiError(message, response.status, data, requestId)
     }
   }
 }
@@ -309,14 +310,14 @@ const withTimeout = async <T>(
   }
 }
 
-const mapRequestError = (error: unknown, timeoutMs: number): LumaError =>
+const mapRequestError = (error: unknown, timeoutMs: number, requestId: string): LumaError =>
   error instanceof LumaError
     ? error
     : error instanceof Error
       ? error.name === 'AbortError'
-        ? new LumaNetworkError(`Request timed out after ${timeoutMs}ms`, error)
-        : new LumaNetworkError(error.message, error)
-      : new LumaNetworkError('An unknown error occurred', error)
+        ? new LumaNetworkError(`Request timed out after ${timeoutMs}ms`, error, requestId)
+        : new LumaNetworkError(error.message, error, requestId)
+      : new LumaNetworkError('An unknown error occurred', error, requestId)
 
 /**
  * Parses a Retry-After header value, supporting both numeric seconds and HTTP-date formats.
@@ -363,6 +364,7 @@ const buildDebugRequest = ({
 })
 
 interface DebugResponseContextParams {
+  requestId: string
   request: DebugRequest
   response: Response
   data: unknown
@@ -370,11 +372,13 @@ interface DebugResponseContextParams {
 }
 
 const buildDebugResponseContext = ({
+  requestId,
   request,
   response,
   data,
   durationMs,
 }: DebugResponseContextParams): DebugContext => ({
+  requestId,
   request,
   outcome: response.ok
     ? {
@@ -399,16 +403,19 @@ const buildDebugResponseContext = ({
 })
 
 interface DebugNetworkErrorContextParams {
+  requestId: string
   request: DebugRequest
   error: LumaNetworkError
   durationMs: number
 }
 
 const buildDebugNetworkErrorContext = ({
+  requestId,
   request,
   error,
   durationMs,
 }: DebugNetworkErrorContextParams): DebugContext => ({
+  requestId,
   request,
   outcome: {
     type: 'network-error',
@@ -423,7 +430,7 @@ const logDebugHookError = (error: unknown): void => {
 
 const invokeDebug = (debug: DebugHook, context: DebugContext): void => {
   try {
-    debug(context)
+    Promise.resolve(debug(context)).catch(logDebugHookError)
   } catch (error: unknown) {
     logDebugHookError(error)
   }
@@ -438,6 +445,7 @@ const safelyInvokeDebug = (debug: DebugHook | undefined, context: DebugContext):
 }
 
 interface ExecuteRequestParams<T> {
+  requestId: string
   url: string
   init: RequestInit
   timeoutMs: number
@@ -448,6 +456,7 @@ interface ExecuteRequestParams<T> {
 }
 
 const executeRequest = async <T>({
+  requestId,
   url,
   init,
   timeoutMs,
@@ -463,6 +472,7 @@ const executeRequest = async <T>({
     safelyInvokeDebug(
       debug,
       buildDebugResponseContext({
+        requestId,
         request: debugRequest,
         response,
         data,
@@ -471,13 +481,14 @@ const executeRequest = async <T>({
     )
 
     if (response.ok) {
-      return parseSchemaResult(schema, data)
+      return parseSchemaResult(schema, data, requestId)
     }
 
-    return throwForResponseStatus(response, data)
+    return throwForResponseStatus(response, data, requestId)
   })
 
 interface HandleRequestErrorParams {
+  requestId: string
   error: unknown
   timeoutMs: number
   debugRequest: DebugRequest
@@ -486,13 +497,14 @@ interface HandleRequestErrorParams {
 }
 
 const handleRequestError = ({
+  requestId,
   error,
   timeoutMs,
   debugRequest,
   debug,
   startTimeMs,
 }: HandleRequestErrorParams): never => {
-  const mappedError = mapRequestError(error, timeoutMs)
+  const mappedError = mapRequestError(error, timeoutMs, requestId)
 
   // Only call debug for actual network/timeout errors, not HTTP errors.
   // (HTTP errors already triggered a debug call with the response.)
@@ -500,6 +512,7 @@ const handleRequestError = ({
     safelyInvokeDebug(
       debug,
       buildDebugNetworkErrorContext({
+        requestId,
         request: debugRequest,
         error: mappedError,
         durationMs: Date.now() - startTimeMs,
@@ -519,6 +532,7 @@ export function createFetcher(options: FetcherOptions) {
   }
 
   async function request<T>(requestOptions: RequestOptions, schema: ZodType<T>): Promise<T> {
+    const requestId = crypto.randomUUID()
     const { method, path, query, body } = requestOptions
     const url = buildUrl(config.baseUrl, path, query)
     const init = buildRequestInit(config.apiKey, { method, body })
@@ -534,6 +548,7 @@ export function createFetcher(options: FetcherOptions) {
 
     try {
       return await executeRequest({
+        requestId,
         url,
         init,
         timeoutMs: config.timeout,
@@ -544,6 +559,7 @@ export function createFetcher(options: FetcherOptions) {
       })
     } catch (error: unknown) {
       return handleRequestError({
+        requestId,
         error,
         timeoutMs: config.timeout,
         debugRequest,

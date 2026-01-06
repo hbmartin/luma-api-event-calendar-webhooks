@@ -1,7 +1,7 @@
 {
 	"name": "luma-api-event-calendar-webhooks",
 	"private": false,
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"description": "A TypeScript library for the Luma calendar and event APIs with support for incoming webhooks.",
 	"type": "module",
 	"main": "./dist/index.cjs",
@@ -52,10 +52,15 @@
 		"luma",
 		"calendar",
 		"event",
+		"events",
+		"event-management",
 		"api",
 		"zapier",
 		"webhooks",
-		"sdk"
+		"sdk",
+		"rsvp",
+		"attendee",
+		"guest-list"
 	],
 	"author": {
 		"name": "Harold Martin",

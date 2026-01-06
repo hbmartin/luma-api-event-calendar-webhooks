@@ -1,4 +1,5 @@
 import type { ZodType } from 'zod'
+import { randomUUID } from 'node:crypto'
 import {
   LumaError,
   LumaApiError,
@@ -60,7 +61,7 @@ export interface DebugContext {
   durationMs: number
 }
 
-export type DebugHook = (context: DebugContext) => void
+export type DebugHook = (context: DebugContext) => void | Promise<void>
 
 export interface FetcherOptions {
   apiKey: string
@@ -428,20 +429,22 @@ const logDebugHookError = (error: unknown): void => {
   console.error('Luma debug hook error', error)
 }
 
-const invokeDebug = (debug: DebugHook, context: DebugContext): void => {
+const noOpDebugHook: DebugHook = () => undefined
+
+const invokeDebugHook = async (debug: DebugHook, context: DebugContext): Promise<void> => {
   try {
-    Promise.resolve(debug(context)).catch(logDebugHookError)
-  } catch (error: unknown) {
+    await Promise.resolve(debug(context))
+  } catch (error) {
     logDebugHookError(error)
   }
 }
 
-const safelyInvokeDebug = (debug: DebugHook | undefined, context: DebugContext): void => {
-  if (debug === undefined) {
-    return
-  }
-
-  invokeDebug(debug, context)
+const safelyInvokeDebug = async (
+  debug: DebugHook | undefined,
+  context: DebugContext
+): Promise<void> => {
+  const debugHandler = debug ?? noOpDebugHook
+  await invokeDebugHook(debugHandler, context)
 }
 
 interface ExecuteRequestParams<T> {
@@ -469,7 +472,7 @@ const executeRequest = async <T>({
     const response = await fetch(url, { ...init, signal })
     const data = await parseResponsePayload(response)
 
-    safelyInvokeDebug(
+    await safelyInvokeDebug(
       debug,
       buildDebugResponseContext({
         requestId,
@@ -496,20 +499,20 @@ interface HandleRequestErrorParams {
   startTimeMs: number
 }
 
-const handleRequestError = ({
+const handleRequestError = async ({
   requestId,
   error,
   timeoutMs,
   debugRequest,
   debug,
   startTimeMs,
-}: HandleRequestErrorParams): never => {
+}: HandleRequestErrorParams): Promise<never> => {
   const mappedError = mapRequestError(error, timeoutMs, requestId)
 
   // Only call debug for actual network/timeout errors, not HTTP errors.
   // (HTTP errors already triggered a debug call with the response.)
   if (mappedError instanceof LumaNetworkError) {
-    safelyInvokeDebug(
+    await safelyInvokeDebug(
       debug,
       buildDebugNetworkErrorContext({
         requestId,
@@ -532,7 +535,7 @@ export function createFetcher(options: FetcherOptions) {
   }
 
   async function request<T>(requestOptions: RequestOptions, schema: ZodType<T>): Promise<T> {
-    const requestId = crypto.randomUUID()
+    const requestId = randomUUID()
     const { method, path, query, body } = requestOptions
     const url = buildUrl(config.baseUrl, path, query)
     const init = buildRequestInit(config.apiKey, { method, body })
@@ -558,7 +561,7 @@ export function createFetcher(options: FetcherOptions) {
         startTimeMs,
       })
     } catch (error: unknown) {
-      return handleRequestError({
+      return await handleRequestError({
         requestId,
         error,
         timeoutMs: config.timeout,

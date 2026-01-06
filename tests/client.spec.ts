@@ -552,6 +552,54 @@ describe("LumaClient", () => {
       expect(context.durationMs).toBeGreaterThanOrEqual(0);
     });
 
+    it("should await async debug hook on successful request", async () => {
+      let resolveDebug: (() => void) | undefined;
+      let notifyDebugCalled: (() => void) | undefined;
+
+      const debugCalled = new Promise<void>((resolve) => {
+        notifyDebugCalled = resolve;
+      });
+
+      const debugSpy = vi.fn<[DebugContext], Promise<void>>(() => {
+        if (notifyDebugCalled) {
+          notifyDebugCalled();
+        }
+        return new Promise<void>((resolve) => {
+          resolveDebug = resolve;
+        });
+      });
+      const debugClient = new LumaClient({
+        apiKey: "test-api-key",
+        debug: debugSpy,
+      });
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: new Headers({ "content-type": "application/json" }),
+        text: async () => JSON.stringify({ user: { api_id: "user-123" } }),
+      });
+
+      let resolved = false;
+      const requestPromise = debugClient.user.getSelf().then(() => {
+        resolved = true;
+      });
+
+      await debugCalled;
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(resolved).toBe(false);
+
+      if (!resolveDebug) {
+        throw new Error("Expected debug hook to be called.");
+      }
+      resolveDebug();
+      await requestPromise;
+
+      expect(resolved).toBe(true);
+      expect(debugSpy).toHaveBeenCalledTimes(1);
+    });
+
     it("should call debug hook on API error with response info", async () => {
       const debugSpy = vi.fn<[DebugContext], void>();
       const debugClient = new LumaClient({
@@ -649,6 +697,49 @@ describe("LumaClient", () => {
         expect(context.outcome.error).toBeInstanceOf(LumaNetworkError);
         expect(context.outcome.error.message).toBe("Network error");
       }
+    });
+
+    it("should await async debug hook on network error", async () => {
+      let resolveDebug: (() => void) | undefined;
+      let notifyDebugCalled: (() => void) | undefined;
+
+      const debugCalled = new Promise<void>((resolve) => {
+        notifyDebugCalled = resolve;
+      });
+
+      const debugSpy = vi.fn<[DebugContext], Promise<void>>(() => {
+        if (notifyDebugCalled) {
+          notifyDebugCalled();
+        }
+        return new Promise<void>((resolve) => {
+          resolveDebug = resolve;
+        });
+      });
+      const debugClient = new LumaClient({
+        apiKey: "test-api-key",
+        debug: debugSpy,
+      });
+
+      mockFetch.mockRejectedValueOnce(new Error("Network error"));
+
+      let rejected = false;
+      const requestPromise = debugClient.user.getSelf().catch(() => {
+        rejected = true;
+      });
+
+      await debugCalled;
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(rejected).toBe(false);
+
+      if (!resolveDebug) {
+        throw new Error("Expected debug hook to be called.");
+      }
+      resolveDebug();
+      await requestPromise;
+
+      expect(rejected).toBe(true);
+      expect(debugSpy).toHaveBeenCalledTimes(1);
     });
 
     it("should call debug hook with error outcome on timeout", async () => {

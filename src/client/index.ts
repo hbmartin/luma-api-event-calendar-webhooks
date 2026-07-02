@@ -38,6 +38,11 @@ export { createFetcher, BASE_URL, parseRetryAfter } from './fetcher.js'
 export type {
   FetcherOptions,
   Fetcher,
+  FetchImplementation,
+  PerRequestOptions,
+  QueryParams,
+  QueryPrimitive,
+  QueryValue,
   RequestOptions,
   FetcherConfig,
   DebugContext,
@@ -46,3 +51,10 @@ export type {
   DebugResponse,
   DebugOutcome,
 } from './fetcher.js'
+
+// Re-export pagination helpers
+export { paginateItems, paginatePages } from './pagination.js'
+export type { PageFetcher, PaginatedPage } from './pagination.js'
+
+// Re-export retry types
+export type { RetryConfig, RetryOptions } from './retry.js'

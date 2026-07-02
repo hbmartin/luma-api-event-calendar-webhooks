@@ -1,7 +1,9 @@
+import type { RetryConfig, RetryOptions } from './retry.js'
 import type { ZodType } from 'zod'
-import { randomUUID } from 'node:crypto'
+import { computeRetryDelayMs, resolveRetryConfig, waitBeforeRetry } from './retry.js'
 import {
   LumaError,
+  LumaAbortError,
   LumaApiError,
   LumaAuthenticationError,
   LumaNetworkError,
@@ -63,11 +65,24 @@ export interface DebugContext {
 
 export type DebugHook = (context: DebugContext) => void | Promise<void>
 
+/**
+ * Minimal fetch signature the client relies on. Compatible with the global
+ * fetch in Node.js >= 18, Deno, Bun, browsers, and edge runtimes.
+ */
+export type FetchImplementation = (input: string | URL, init?: RequestInit) => Promise<Response>
+
 export interface FetcherOptions {
   apiKey: string
   baseUrl?: string
   timeout?: number
   debug?: DebugHook
+  /**
+   * Custom fetch implementation, useful for proxies, instrumentation, and
+   * tests. Defaults to the global fetch.
+   */
+  fetch?: FetchImplementation
+  /** Opt-in retry policy. Requests are never retried when omitted. */
+  retry?: RetryOptions
 }
 
 export interface RequestOptions {
@@ -75,6 +90,20 @@ export interface RequestOptions {
   path: string
   query?: QueryParams
   body?: unknown
+  /**
+   * Caller-supplied cancellation signal, combined with the client timeout via
+   * AbortSignal.any(). Aborting rejects the request with a LumaAbortError.
+   */
+  signal?: AbortSignal
+}
+
+/** Per-request options accepted by every resource method. */
+export interface PerRequestOptions {
+  /**
+   * Cancels the request when aborted. Combined with the client timeout via
+   * AbortSignal.any(); aborting rejects with a LumaAbortError.
+   */
+  signal?: AbortSignal
 }
 
 export interface FetcherConfig {
@@ -82,13 +111,17 @@ export interface FetcherConfig {
   baseUrl: string
   timeout: number
   debug?: DebugHook
+  fetchImplementation: FetchImplementation
+  retry?: RetryConfig
 }
 
 interface ErrorPayload {
   message: unknown
 }
 
-export type QueryValue = string | number | boolean | undefined
+export type QueryPrimitive = string | number | boolean
+
+export type QueryValue = QueryPrimitive | readonly QueryPrimitive[] | undefined
 
 export interface QueryParams {
   [key: string]: QueryValue
@@ -175,12 +208,28 @@ const parseDateRetryAfter = (value: string, nowMs: number): number | undefined =
   return Math.max(delaySeconds, 0)
 }
 
-const setQueryParam = (url: URL, key: string, value: QueryValue): void => {
-  if (value === undefined) {
-    return
+const appendArrayQueryParam = (url: URL, key: string, values: readonly QueryPrimitive[]): void => {
+  for (const value of values) {
+    url.searchParams.append(key, String(value))
   }
+}
 
-  url.searchParams.set(normalizeQueryKey(key), String(value))
+const setDefinedQueryParam = (
+  url: URL,
+  key: string,
+  value: QueryPrimitive | readonly QueryPrimitive[]
+): void => {
+  if (Array.isArray(value)) {
+    appendArrayQueryParam(url, key, value)
+  } else {
+    url.searchParams.set(key, String(value))
+  }
+}
+
+const setQueryParam = (url: URL, key: string, value: QueryValue): void => {
+  if (value !== undefined) {
+    setDefinedQueryParam(url, normalizeQueryKey(key), value)
+  }
 }
 
 const applyQueryParams = (url: URL, query: QueryParams): void => {
@@ -297,28 +346,55 @@ const buildRequestInit = (apiKey: string, options: BuildRequestInitOptions): Req
   }
 }
 
+interface WithTimeoutParams {
+  timeoutMs: number
+  signal?: AbortSignal
+}
+
+const combineWithTimeoutSignal = (
+  timeoutSignal: AbortSignal,
+  signal: AbortSignal | undefined
+): AbortSignal => (signal === undefined ? timeoutSignal : AbortSignal.any([timeoutSignal, signal]))
+
 const withTimeout = async <T>(
-  timeoutMs: number,
+  { timeoutMs, signal }: WithTimeoutParams,
   execute: (signal: AbortSignal) => Promise<T>
 ): Promise<T> => {
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
 
   try {
-    return await execute(controller.signal)
+    return await execute(combineWithTimeoutSignal(controller.signal, signal))
   } finally {
     clearTimeout(timeoutId)
   }
 }
 
-const mapRequestError = (error: unknown, timeoutMs: number, requestId: string): LumaError =>
+interface MapRequestErrorParams {
+  error: unknown
+  timeoutMs: number
+  requestId: string
+  signal?: AbortSignal
+}
+
+const isAbortLikeError = (error: unknown): boolean =>
+  error instanceof Error && error.name === 'AbortError'
+
+const mapRequestError = ({
+  error,
+  timeoutMs,
+  requestId,
+  signal,
+}: MapRequestErrorParams): LumaError =>
   error instanceof LumaError
     ? error
-    : error instanceof Error
-      ? error.name === 'AbortError'
+    : signal?.aborted === true
+      ? new LumaAbortError(signal.reason, requestId)
+      : isAbortLikeError(error)
         ? new LumaNetworkError(`Request timed out after ${timeoutMs}ms`, error, requestId)
-        : new LumaNetworkError(error.message, error, requestId)
-      : new LumaNetworkError('An unknown error occurred', error, requestId)
+        : error instanceof Error
+          ? new LumaNetworkError(error.message, error, requestId)
+          : new LumaNetworkError('An unknown error occurred', error, requestId)
 
 /**
  * Parses a Retry-After header value, supporting both numeric seconds and HTTP-date formats.
@@ -456,6 +532,8 @@ interface ExecuteRequestParams<T> {
   debugRequest: DebugRequest
   debug?: DebugHook
   startTimeMs: number
+  fetchImplementation: FetchImplementation
+  signal?: AbortSignal
 }
 
 const executeRequest = async <T>({
@@ -467,9 +545,11 @@ const executeRequest = async <T>({
   debugRequest,
   debug,
   startTimeMs,
+  fetchImplementation,
+  signal,
 }: ExecuteRequestParams<T>): Promise<T> =>
-  withTimeout(timeoutMs, async (signal) => {
-    const response = await fetch(url, { ...init, signal })
+  withTimeout({ timeoutMs, signal }, async (combinedSignal) => {
+    const response = await fetchImplementation(url, { ...init, signal: combinedSignal })
     const data = await parseResponsePayload(response)
 
     await safelyInvokeDebug(
@@ -497,6 +577,7 @@ interface HandleRequestErrorParams {
   debugRequest: DebugRequest
   debug?: DebugHook
   startTimeMs: number
+  signal?: AbortSignal
 }
 
 const handleRequestError = async ({
@@ -506,8 +587,9 @@ const handleRequestError = async ({
   debugRequest,
   debug,
   startTimeMs,
+  signal,
 }: HandleRequestErrorParams): Promise<never> => {
-  const mappedError = mapRequestError(error, timeoutMs, requestId)
+  const mappedError = mapRequestError({ error, timeoutMs, requestId, signal })
 
   // Only call debug for actual network/timeout errors, not HTTP errors.
   // (HTTP errors already triggered a debug call with the response.)
@@ -526,17 +608,22 @@ const handleRequestError = async ({
   throw mappedError
 }
 
+const defaultFetchImplementation: FetchImplementation = (input, init) =>
+  globalThis.fetch(input, init)
+
 export function createFetcher(options: FetcherOptions) {
   const config: FetcherConfig = {
     apiKey: options.apiKey,
     baseUrl: options.baseUrl ?? BASE_URL,
     timeout: options.timeout ?? 30_000,
     debug: options.debug,
+    fetchImplementation: options.fetch ?? defaultFetchImplementation,
+    retry: options.retry === undefined ? undefined : resolveRetryConfig(options.retry),
   }
 
-  async function request<T>(requestOptions: RequestOptions, schema: ZodType<T>): Promise<T> {
-    const requestId = randomUUID()
-    const { method, path, query, body } = requestOptions
+  async function attemptRequest<T>(requestOptions: RequestOptions, schema: ZodType<T>): Promise<T> {
+    const requestId = globalThis.crypto.randomUUID()
+    const { method, path, query, body, signal } = requestOptions
     const url = buildUrl(config.baseUrl, path, query)
     const init = buildRequestInit(config.apiKey, { method, body })
 
@@ -559,6 +646,8 @@ export function createFetcher(options: FetcherOptions) {
         debugRequest,
         debug: config.debug,
         startTimeMs,
+        fetchImplementation: config.fetchImplementation,
+        signal,
       })
     } catch (error: unknown) {
       return await handleRequestError({
@@ -568,20 +657,61 @@ export function createFetcher(options: FetcherOptions) {
         debugRequest,
         debug: config.debug,
         startTimeMs,
+        signal,
       })
+    }
+  }
+
+  interface WaitBeforeRetryParams {
+    error: unknown
+    attempt: number
+    signal?: AbortSignal
+  }
+
+  /** Waits out the backoff for a retryable failure, or rethrows the error. */
+  async function waitBeforeRetryOrRethrow({
+    error,
+    attempt,
+    signal,
+  }: WaitBeforeRetryParams): Promise<void> {
+    const delayMs =
+      config.retry === undefined
+        ? undefined
+        : computeRetryDelayMs({ error, attempt, config: config.retry })
+
+    if (delayMs === undefined) {
+      throw error
+    }
+
+    await waitBeforeRetry(delayMs, signal)
+  }
+
+  async function request<T>(requestOptions: RequestOptions, schema: ZodType<T>): Promise<T> {
+    for (let attempt = 0; ; attempt += 1) {
+      try {
+        return await attemptRequest(requestOptions, schema)
+      } catch (error: unknown) {
+        await waitBeforeRetryOrRethrow({ error, attempt, signal: requestOptions.signal })
+      }
     }
   }
 
   async function get<T>(
     path: string,
     query: QueryParams | undefined,
-    schema: ZodType<T>
+    schema: ZodType<T>,
+    options?: PerRequestOptions
   ): Promise<T> {
-    return request({ method: 'GET', path, query }, schema)
+    return request({ method: 'GET', path, query, signal: options?.signal }, schema)
   }
 
-  async function post<T>(path: string, body: unknown, schema: ZodType<T>): Promise<T> {
-    return request({ method: 'POST', path, body }, schema)
+  async function post<T>(
+    path: string,
+    body: unknown,
+    schema: ZodType<T>,
+    options?: PerRequestOptions
+  ): Promise<T> {
+    return request({ method: 'POST', path, body, signal: options?.signal }, schema)
   }
 
   return {

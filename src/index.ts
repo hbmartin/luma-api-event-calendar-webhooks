@@ -39,9 +39,14 @@ export {
   LumaRateLimitError,
   LumaAuthenticationError,
   LumaNotFoundError,
+  LumaWebhookConfigurationError,
   LumaWebhookSignatureError,
 } from './errors.js'
-export type { LumaErrorDetails, WebhookVerificationFailureReason } from './errors.js'
+export type {
+  LumaErrorDetails,
+  WebhookConfigurationFailureReason,
+  WebhookVerificationFailureReason,
+} from './errors.js'
 
 // Resource namespace exports - each namespace bundles a resource class with its schemas
 export * as User from './namespaces/user.js'

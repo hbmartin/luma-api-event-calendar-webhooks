@@ -7,18 +7,16 @@ import type { WebhookVerificationFailureReason } from '../errors.js'
 export const WEBHOOK_SIGNATURE_HEADER = 'webhook-signature'
 
 const DEFAULT_TOLERANCE_IN_SECONDS = 300
+const MAX_WEBHOOK_SIGNATURES = 10
 const MILLISECONDS_PER_SECOND = 1000
 
-/** Reasons signature verification itself can fail (excludes configuration problems). */
-export type WebhookSignatureFailureReason = Exclude<
-  WebhookVerificationFailureReason,
-  'missing-secret'
->
+/** Reasons signature verification itself can fail. */
+export type WebhookSignatureFailureReason = WebhookVerificationFailureReason
 
 export interface WebhookSignatureHeader {
   /** Unix timestamp (seconds) taken from the `t` field. */
   timestamp: number
-  /** All `v1` signatures present in the header, hex-encoded. */
+  /** `v1` signatures retained for verification, hex-encoded and capped. */
   signatures: string[]
 }
 
@@ -48,11 +46,14 @@ const findTimestamp = (fields: HeaderField[]): number | undefined => {
 }
 
 const collectSignatures = (fields: HeaderField[]): string[] =>
-  fields.filter(([key, value]) => key === 'v1' && value.length > 0).map(([, value]) => value)
+  fields
+    .filter(([key, value]) => key === 'v1' && value.length > 0)
+    .map(([, value]) => value)
+    .slice(0, MAX_WEBHOOK_SIGNATURES)
 
 /**
  * Parses a `webhook-signature` header of the form `t=<timestamp>,v1=<signature>`.
- * Multiple `v1` entries (e.g. during secret rotation) are all collected.
+ * Multiple `v1` entries are supported and capped before verification.
  * @returns The parsed header, or undefined when it is malformed.
  */
 export function parseWebhookSignatureHeader(header: string): WebhookSignatureHeader | undefined {
@@ -71,7 +72,7 @@ const HEX_PATTERN = /^[\da-f]+$/i
 const isHexString = (hex: string): boolean =>
   hex.length > 0 && hex.length % 2 === 0 && HEX_PATTERN.test(hex)
 
-const parseHexBytes = (hex: string): Uint8Array<ArrayBuffer> => {
+const parseHexBytes = (hex: string): Uint8Array => {
   const bytes = new Uint8Array(hex.length / 2)
   for (let index = 0; index < bytes.length; index += 1) {
     bytes[index] = Number.parseInt(hex.slice(index * 2, index * 2 + 2), 16)
@@ -79,8 +80,14 @@ const parseHexBytes = (hex: string): Uint8Array<ArrayBuffer> => {
   return bytes
 }
 
-const hexToBytes = (hex: string): Uint8Array<ArrayBuffer> | undefined =>
+const hexToBytes = (hex: string): Uint8Array | undefined =>
   isHexString(hex) ? parseHexBytes(hex) : undefined
+
+const copyBytesToArrayBuffer = (bytes: Uint8Array): ArrayBuffer => {
+  const buffer = new ArrayBuffer(bytes.byteLength)
+  new Uint8Array(buffer).set(bytes)
+  return buffer
+}
 
 const importHmacKey = (secret: string): Promise<CryptoKey> =>
   globalThis.crypto.subtle.importKey(
@@ -100,7 +107,7 @@ interface MatchesAnySignatureParams {
 
 interface MatchesSignatureParams {
   key: CryptoKey
-  signedPayload: Uint8Array<ArrayBuffer>
+  signedPayload: Uint8Array
   signature: string
 }
 
@@ -115,7 +122,12 @@ const matchesSignature = async ({
   }
 
   // crypto.subtle.verify performs a constant-time comparison internally.
-  return globalThis.crypto.subtle.verify('HMAC', key, signatureBytes, signedPayload)
+  return globalThis.crypto.subtle.verify(
+    'HMAC',
+    key,
+    copyBytesToArrayBuffer(signatureBytes),
+    copyBytesToArrayBuffer(signedPayload)
+  )
 }
 
 const matchesAnySignature = async ({
@@ -149,6 +161,18 @@ export interface VerifyWebhookSignatureParams {
   nowInSeconds?: number
 }
 
+const getCurrentUnixTimeInSeconds = (): number => Math.floor(Date.now() / MILLISECONDS_PER_SECOND)
+
+const resolveNowInSeconds = (nowInSeconds: number | undefined): number =>
+  nowInSeconds === undefined || !Number.isFinite(nowInSeconds)
+    ? getCurrentUnixTimeInSeconds()
+    : nowInSeconds
+
+const resolveToleranceInSeconds = (toleranceInSeconds: number | undefined): number =>
+  toleranceInSeconds === undefined || !Number.isFinite(toleranceInSeconds)
+    ? DEFAULT_TOLERANCE_IN_SECONDS
+    : toleranceInSeconds
+
 /**
  * Verifies that a webhook delivery was signed by Luma. The signature is an
  * HMAC-SHA256 of `${timestamp}.${payload}` keyed with the webhook secret,
@@ -159,7 +183,7 @@ export async function verifyWebhookSignature({
   payload,
   header,
   secret,
-  toleranceInSeconds = DEFAULT_TOLERANCE_IN_SECONDS,
+  toleranceInSeconds,
   nowInSeconds,
 }: VerifyWebhookSignatureParams): Promise<WebhookSignatureVerification> {
   if (header === null || header === undefined || header.length === 0) {
@@ -171,8 +195,9 @@ export async function verifyWebhookSignature({
     return { valid: false, reason: 'malformed-header' }
   }
 
-  const now = nowInSeconds ?? Math.floor(Date.now() / MILLISECONDS_PER_SECOND)
-  if (Math.abs(now - parsedHeader.timestamp) > toleranceInSeconds) {
+  const now = resolveNowInSeconds(nowInSeconds)
+  const tolerance = resolveToleranceInSeconds(toleranceInSeconds)
+  if (Math.abs(now - parsedHeader.timestamp) > tolerance) {
     return { valid: false, reason: 'timestamp-out-of-tolerance' }
   }
 

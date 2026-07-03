@@ -1,5 +1,5 @@
 import { createHmac } from "node:crypto";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { Webhook } from "../src/index.js";
 
 const { parseWebhookSignatureHeader, verifyWebhookSignature, WEBHOOK_SIGNATURE_HEADER } = Webhook;
@@ -28,6 +28,27 @@ describe("parseWebhookSignatureHeader", () => {
   it("should collect multiple v1 signatures", () => {
     const parsed = parseWebhookSignatureHeader("t=1700000000,v1=aaaa,v1=bbbb");
     expect(parsed).toEqual({ timestamp: 1_700_000_000, signatures: ["aaaa", "bbbb"] });
+  });
+
+  it("should cap collected v1 signatures", () => {
+    const signatureFields = Array.from(
+      { length: 12 },
+      (_unused, index) => `v1=${index.toString().padStart(2, "0")}`
+    );
+    const parsed = parseWebhookSignatureHeader(`t=1700000000,${signatureFields.join(",")}`);
+
+    expect(parsed?.signatures).toEqual([
+      "00",
+      "01",
+      "02",
+      "03",
+      "04",
+      "05",
+      "06",
+      "07",
+      "08",
+      "09",
+    ]);
   });
 
   it("should tolerate whitespace around fields", () => {
@@ -74,6 +95,20 @@ describe("verifyWebhookSignature", () => {
       nowInSeconds: NOW,
     });
     expect(result).toEqual({ valid: true, timestamp: NOW });
+  });
+
+  it("should reject a valid signature after the signature cap", async () => {
+    const invalidSignatures = Array.from({ length: 10 }, () => `v1=${"0".repeat(64)}`);
+    const header = `t=${NOW},${invalidSignatures.join(",")},v1=${sign(payload, NOW)}`;
+
+    const result = await verifyWebhookSignature({
+      payload,
+      header,
+      secret: SECRET,
+      nowInSeconds: NOW,
+    });
+
+    expect(result).toEqual({ valid: false, reason: "signature-mismatch" });
   });
 
   it("should reject a missing header", async () => {
@@ -148,6 +183,38 @@ describe("verifyWebhookSignature", () => {
       nowInSeconds: NOW,
     });
     expect(result).toEqual({ valid: false, reason: "timestamp-out-of-tolerance" });
+  });
+
+  it("should default a non-finite tolerance to the replay window", async () => {
+    const staleTimestamp = NOW - 301;
+    const result = await verifyWebhookSignature({
+      payload,
+      header: headerFor(payload, staleTimestamp),
+      secret: SECRET,
+      toleranceInSeconds: Number.NaN,
+      nowInSeconds: NOW,
+    });
+
+    expect(result).toEqual({ valid: false, reason: "timestamp-out-of-tolerance" });
+  });
+
+  it("should default a non-finite current time to Date.now", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(NOW * 1000);
+
+    try {
+      const staleTimestamp = NOW - 301;
+      const result = await verifyWebhookSignature({
+        payload,
+        header: headerFor(payload, staleTimestamp),
+        secret: SECRET,
+        nowInSeconds: Number.POSITIVE_INFINITY,
+      });
+
+      expect(result).toEqual({ valid: false, reason: "timestamp-out-of-tolerance" });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("should honor a custom tolerance", async () => {

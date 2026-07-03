@@ -8,6 +8,8 @@ import {
   LumaRateLimitError,
   LumaAuthenticationError,
   LumaNotFoundError,
+  LumaWebhookConfigurationError,
+  LumaWebhookSignatureError,
 } from "../src/errors.js";
 
 describe("LumaError", () => {
@@ -146,6 +148,30 @@ describe("LumaNotFoundError", () => {
     const responseData = { error: "Resource not found" };
     const error = new LumaNotFoundError("Event not found", responseData);
     expect(error.response).toEqual(responseData);
+  });
+});
+
+describe("LumaWebhookSignatureError", () => {
+  it("should create a webhook signature error with a verification reason", () => {
+    const error = new LumaWebhookSignatureError("signature-mismatch");
+
+    expect(error.message).toBe("Webhook signature verification failed: signature-mismatch");
+    expect(error.name).toBe("LumaWebhookSignatureError");
+    expect(error.code).toBe("WEBHOOK_SIGNATURE_ERROR");
+    expect(error.reason).toBe("signature-mismatch");
+    expect(error instanceof LumaError).toBe(true);
+  });
+});
+
+describe("LumaWebhookConfigurationError", () => {
+  it("should create a webhook configuration error with a configuration reason", () => {
+    const error = new LumaWebhookConfigurationError("missing-secret");
+
+    expect(error.message).toBe("Webhook configuration is invalid: missing-secret");
+    expect(error.name).toBe("LumaWebhookConfigurationError");
+    expect(error.code).toBe("WEBHOOK_CONFIGURATION_ERROR");
+    expect(error.reason).toBe("missing-secret");
+    expect(error instanceof LumaError).toBe(true);
   });
 });
 

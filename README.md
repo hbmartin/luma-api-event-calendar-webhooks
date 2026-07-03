@@ -288,7 +288,7 @@ if (!result.valid) {
 Verification uses WebCrypto, so it works in Node.js, Deno, Bun, browsers, and
 edge runtimes. Timestamps outside a 5-minute window are rejected to prevent
 replay attacks (tune with `toleranceInSeconds`). Multiple `v1` signatures
-(e.g. during secret rotation) are all checked.
+(e.g. during secret rotation) are supported, capped at 10 checked signatures.
 
 ## Typed Webhook Handler
 
@@ -432,7 +432,8 @@ You can also use `parseRetryAfter` directly if needed, or enable the built-in
 retry policy (see "Automatic Retries") to have 429s handled for you.
 
 Additional error classes: `LumaAbortError` (caller cancelled via `AbortSignal`)
-and `LumaWebhookSignatureError` (webhook verification failed, with a `reason`).
+`LumaWebhookSignatureError` (webhook verification failed, with a `reason`), and
+`LumaWebhookConfigurationError` (webhook handler configuration failed).
 
 ## Rate Limits
 

@@ -1,6 +1,6 @@
 import { createHmac } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
-import { Webhook, LumaWebhookSignatureError } from "../src/index.js";
+import { Webhook, LumaWebhookConfigurationError, LumaWebhookSignatureError } from "../src/index.js";
 
 const { createWebhookHandler } = Webhook;
 
@@ -22,6 +22,16 @@ const guestRegisteredPayload = {
     guest: { api_id: "gst_123", name: "New Guest" },
     event: { api_id: "evt_123", name: "Test Event" },
   },
+};
+
+const hasHandleRequest = (
+  handler: Webhook.WebhookHandler
+): handler is Webhook.VerifyingWebhookHandler => {
+  if (!("handleRequest" in handler)) {
+    return false;
+  }
+
+  return typeof handler.handleRequest === "function";
 };
 
 describe("createWebhookHandler", () => {
@@ -190,12 +200,15 @@ describe("createWebhookHandler", () => {
       await expect(attempt).rejects.toMatchObject({ reason: "timestamp-out-of-tolerance" });
     });
 
-    it("should throw missing-secret when constructed without one", async () => {
-      const handler = createWebhookHandler({}) as Webhook.VerifyingWebhookHandler;
+    it("should throw a configuration error when constructed without a secret", async () => {
+      const handler = createWebhookHandler({});
+      if (!hasHandleRequest(handler)) {
+        throw new Error("Expected handler to expose handleRequest at runtime");
+      }
+      const attempt = handler.handleRequest({ body, signatureHeader: validHeader() });
 
-      await expect(handler.handleRequest({ body, signatureHeader: validHeader() })).rejects.toMatchObject({
-        reason: "missing-secret",
-      });
+      await expect(attempt).rejects.toBeInstanceOf(LumaWebhookConfigurationError);
+      await expect(attempt).rejects.toMatchObject({ reason: "missing-secret" });
     });
   });
 });

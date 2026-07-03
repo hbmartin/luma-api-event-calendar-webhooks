@@ -1135,6 +1135,10 @@ describe("parseRetryAfter", () => {
       expect(parseRetryAfter("")).toBeUndefined();
       expect(parseRetryAfter("60abc")).toBeUndefined();
     });
+
+    it("should return undefined for numeric values that cannot parse finitely", () => {
+      expect(parseRetryAfter("9".repeat(400))).toBeUndefined();
+    });
   });
 
   describe("HTTP-date format", () => {

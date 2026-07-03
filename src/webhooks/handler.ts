@@ -10,7 +10,7 @@ import type {
   WebhookPayload,
 } from '../schemas/webhook.js'
 import { verifyWebhookSignature } from './signature.js'
-import { LumaWebhookSignatureError } from '../errors.js'
+import { LumaWebhookConfigurationError, LumaWebhookSignatureError } from '../errors.js'
 import { parseWebhookPayload } from '../schemas/webhook.js'
 
 export type WebhookCallback<Payload> = (payload: Payload) => void | Promise<void>
@@ -105,6 +105,7 @@ export interface VerifyingWebhookHandler extends WebhookHandler {
    * Verifies the `webhook-signature` header against the raw body, then parses
    * and dispatches the payload.
    * @throws LumaWebhookSignatureError when verification fails.
+   * @throws LumaWebhookConfigurationError when no signing secret is configured.
    */
   handleRequest(input: WebhookRequestInput): Promise<WebhookPayload>
 }
@@ -118,7 +119,7 @@ export interface CreateWebhookHandlerOptions extends WebhookHandlerCallbacks {
 
 const requireSecret = (value: string | undefined): string => {
   if (value === undefined) {
-    throw new LumaWebhookSignatureError('missing-secret')
+    throw new LumaWebhookConfigurationError('missing-secret')
   }
 
   return value

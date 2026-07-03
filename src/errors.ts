@@ -79,7 +79,8 @@ export type WebhookVerificationFailureReason =
   | 'malformed-header'
   | 'timestamp-out-of-tolerance'
   | 'signature-mismatch'
-  | 'missing-secret'
+
+export type WebhookConfigurationFailureReason = 'missing-secret'
 
 export class LumaWebhookSignatureError extends LumaError {
   public readonly reason: WebhookVerificationFailureReason
@@ -89,6 +90,17 @@ export class LumaWebhookSignatureError extends LumaError {
     this.name = 'LumaWebhookSignatureError'
     this.reason = reason
     Object.setPrototypeOf(this, LumaWebhookSignatureError.prototype)
+  }
+}
+
+export class LumaWebhookConfigurationError extends LumaError {
+  public readonly reason: WebhookConfigurationFailureReason
+
+  constructor(reason: WebhookConfigurationFailureReason) {
+    super(`Webhook configuration is invalid: ${reason}`, undefined, 'WEBHOOK_CONFIGURATION_ERROR')
+    this.name = 'LumaWebhookConfigurationError'
+    this.reason = reason
+    Object.setPrototypeOf(this, LumaWebhookConfigurationError.prototype)
   }
 }
 

@@ -203,6 +203,149 @@ describe("resource iterators", () => {
     expect(secondUrl).toContain("pagination_cursor=cur");
   });
 
+  it("should iterate calendar events", async () => {
+    mockFetch.mockResolvedValueOnce(
+      jsonResponse({
+        entries: [{ api_id: "cal_evt_1", event: { api_id: "evt_1", name: "Event" } }],
+        has_more: false,
+        next_cursor: null,
+      })
+    );
+
+    const ids: string[] = [];
+    for await (const item of client.calendar.listEventsIterator({ limit: 1 })) {
+      ids.push(item.api_id);
+    }
+
+    expect(ids).toEqual(["cal_evt_1"]);
+    expect(mockFetch).toHaveBeenCalledWith(
+      `${BASE_URL}/v1/calendar/list-events?pagination_limit=1`,
+      expect.any(Object)
+    );
+  });
+
+  it("should iterate calendar person tags", async () => {
+    mockFetch.mockResolvedValueOnce(
+      jsonResponse({
+        entries: [{ api_id: "tag_1", name: "VIP" }],
+        has_more: false,
+        next_cursor: null,
+      })
+    );
+
+    const ids: string[] = [];
+    for await (const item of client.calendar.listPersonTagsIterator({ limit: 1 })) {
+      ids.push(item.api_id);
+    }
+
+    expect(ids).toEqual(["tag_1"]);
+    expect(mockFetch).toHaveBeenCalledWith(
+      `${BASE_URL}/v1/calendar/list-person-tags?pagination_limit=1`,
+      expect.any(Object)
+    );
+  });
+
+  it("should iterate calendar people", async () => {
+    mockFetch.mockResolvedValueOnce(
+      jsonResponse({
+        entries: [{ api_id: "person_1", email: "person@example.com" }],
+        has_more: false,
+        next_cursor: null,
+      })
+    );
+
+    const ids: string[] = [];
+    for await (const item of client.calendar.listPeopleIterator({ limit: 1 })) {
+      ids.push(item.api_id);
+    }
+
+    expect(ids).toEqual(["person_1"]);
+    expect(mockFetch).toHaveBeenCalledWith(
+      `${BASE_URL}/v1/calendar/list-people?pagination_limit=1`,
+      expect.any(Object)
+    );
+  });
+
+  it("should iterate calendar coupons", async () => {
+    mockFetch.mockResolvedValueOnce(
+      jsonResponse({
+        entries: [
+          {
+            api_id: "coupon_1",
+            code: "SAVE",
+            discount_type: "percentage",
+            discount_percentage: 10,
+          },
+        ],
+        has_more: false,
+        next_cursor: null,
+      })
+    );
+
+    const ids: string[] = [];
+    for await (const item of client.calendar.listCouponsIterator({ limit: 1 })) {
+      ids.push(item.api_id);
+    }
+
+    expect(ids).toEqual(["coupon_1"]);
+    expect(mockFetch).toHaveBeenCalledWith(
+      `${BASE_URL}/v1/calendar/coupons?pagination_limit=1`,
+      expect.any(Object)
+    );
+  });
+
+  it("should iterate event coupons", async () => {
+    mockFetch.mockResolvedValueOnce(
+      jsonResponse({
+        entries: [
+          {
+            api_id: "coupon_2",
+            code: "EVENTSAVE",
+            discount_type: "fixed_amount",
+            discount_amount: 500,
+          },
+        ],
+        has_more: false,
+        next_cursor: null,
+      })
+    );
+
+    const ids: string[] = [];
+    for await (const item of client.event.getCouponsIterator({
+      event_api_id: "evt_1",
+      limit: 1,
+    })) {
+      ids.push(item.api_id);
+    }
+
+    expect(ids).toEqual(["coupon_2"]);
+    const requestUrl = String(mockFetch.mock.calls[0][0]);
+    expect(requestUrl).toContain("/v1/event/coupons");
+    expect(requestUrl).toContain("event_api_id=evt_1");
+    expect(requestUrl).toContain("pagination_limit=1");
+  });
+
+  it("should iterate membership tiers", async () => {
+    mockFetch.mockResolvedValueOnce(
+      jsonResponse({
+        entries: [{ api_id: "tier_1", name: "Gold" }],
+        has_more: false,
+        next_cursor: null,
+      })
+    );
+
+    const ids: string[] = [];
+    for await (const item of client.membership.listTiersIterator({ limit: 1 })) {
+      ids.push(item.api_id);
+    }
+
+    expect(ids).toEqual(["tier_1"]);
+    expect(mockFetch).toHaveBeenCalledWith(
+      `${BASE_URL}/v1/memberships/tiers/list?pagination_limit=1`,
+      expect.any(Object)
+    );
+  });
+
   it("should expose iterators on calendar and membership resources", () => {
     expect(typeof client.calendar.listEventsIterator).toBe("function");
     expect(typeof client.calendar.listPeopleIterator).toBe("function");

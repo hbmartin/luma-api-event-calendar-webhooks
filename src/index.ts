@@ -1,10 +1,26 @@
 // Main client export
-export { LumaClient, BASE_URL, createFetcher, parseRetryAfter } from './client/index.js'
+export {
+  LumaClient,
+  BASE_URL,
+  createFetcher,
+  paginateItems,
+  paginatePages,
+  parseRetryAfter,
+} from './client/index.js'
 export type {
   LumaClientOptions,
   Fetcher,
   FetcherOptions,
+  FetchImplementation,
+  PageFetcher,
+  PaginatedPage,
+  PerRequestOptions,
+  QueryParams,
+  QueryPrimitive,
+  QueryValue,
   RequestOptions,
+  RetryConfig,
+  RetryOptions,
   FetcherConfig,
   DebugContext,
   DebugHook,
@@ -16,14 +32,16 @@ export type {
 // Error exports
 export {
   LumaError,
+  LumaAbortError,
   LumaValidationError,
   LumaApiError,
   LumaNetworkError,
   LumaRateLimitError,
   LumaAuthenticationError,
   LumaNotFoundError,
+  LumaWebhookSignatureError,
 } from './errors.js'
-export type { LumaErrorDetails } from './errors.js'
+export type { LumaErrorDetails, WebhookVerificationFailureReason } from './errors.js'
 
 // Resource namespace exports - each namespace bundles a resource class with its schemas
 export * as User from './namespaces/user.js'

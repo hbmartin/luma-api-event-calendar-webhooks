@@ -1,3 +1,4 @@
+import type { PerRequestOptions } from '../fetcher.js'
 import { Resource } from './base.js'
 import {
   type LookupEntityParams,
@@ -10,7 +11,15 @@ export class EntityResource extends Resource {
    * Resolve a Luma entity by its slug
    * GET /v1/entity/lookup
    */
-  async lookup(params: LookupEntityParams): Promise<LookupEntityResponse> {
-    return this.fetcher.get('/v1/entity/lookup', { slug: params.slug }, LookupEntityResponseSchema)
+  async lookup(
+    params: LookupEntityParams,
+    options?: PerRequestOptions
+  ): Promise<LookupEntityResponse> {
+    return this.fetcher.get(
+      '/v1/entity/lookup',
+      { slug: params.slug },
+      LookupEntityResponseSchema,
+      options
+    )
   }
 }

@@ -66,6 +66,32 @@ export class LumaNetworkError extends LumaError {
   }
 }
 
+export class LumaAbortError extends LumaError {
+  constructor(reason?: unknown, requestId?: string) {
+    super('Request was aborted', undefined, 'ABORT_ERROR', { cause: reason, requestId })
+    this.name = 'LumaAbortError'
+    Object.setPrototypeOf(this, LumaAbortError.prototype)
+  }
+}
+
+export type WebhookVerificationFailureReason =
+  | 'missing-header'
+  | 'malformed-header'
+  | 'timestamp-out-of-tolerance'
+  | 'signature-mismatch'
+  | 'missing-secret'
+
+export class LumaWebhookSignatureError extends LumaError {
+  public readonly reason: WebhookVerificationFailureReason
+
+  constructor(reason: WebhookVerificationFailureReason) {
+    super(`Webhook signature verification failed: ${reason}`, undefined, 'WEBHOOK_SIGNATURE_ERROR')
+    this.name = 'LumaWebhookSignatureError'
+    this.reason = reason
+    Object.setPrototypeOf(this, LumaWebhookSignatureError.prototype)
+  }
+}
+
 export class LumaRateLimitError extends LumaApiError {
   public readonly retryAfter?: number
 

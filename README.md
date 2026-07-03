@@ -6,16 +6,21 @@ A TypeScript client for the Luma public API with first-class support for events,
 
 - Typed Luma API client with resource-based methods
 - Zod-validated responses and exportable schemas
-- Webhook configuration + payload parsing for incoming events
+- Auto-pagination via `for await` iterators on every list endpoint
+- Opt-in retries with exponential backoff, jitter, and `Retry-After` support
+- Per-request cancellation with `AbortSignal`
+- Injectable `fetch` for proxies, instrumentation, and tests
+- Webhook configuration, signature verification, and a typed webhook handler
 - Built-in error classes with rate limit handling
 - Debug hook for request/response logging
 - ESM + CJS builds with TypeScript types
+- No Node-only dependencies — runs on any fetch-capable runtime (Node.js, Deno, Bun, Cloudflare Workers, Vercel Edge, browsers)
 
 ## Requirements
 
 - Luma Plus subscription (required by Luma API)
 - A Luma API key from your Luma dashboard
-- Node.js >= 22
+- Any runtime with `fetch`, `AbortSignal.any`, and WebCrypto (Node.js >= 22, Deno, Bun, modern browsers, edge runtimes)
 - `zod` installed in your project (peer dependency)
 
 See Luma docs: https://docs.luma.com/reference/getting-started-with-your-api
@@ -67,7 +72,74 @@ const client = new LumaClient({
   apiKey,
   baseUrl: BASE_URL, // default: https://public-api.luma.com
   timeout: 30_000, // default: 30000 ms
+  retry: {}, // opt-in retries, omit to disable (see "Automatic Retries")
+  fetch: myFetch, // optional custom fetch implementation
 })
+```
+
+### Custom fetch
+
+Pass a `fetch` implementation to route requests through a proxy, add
+instrumentation, or stub responses in tests without patching the global:
+
+```ts
+const client = new LumaClient({
+  apiKey,
+  fetch: async (url, init) => {
+    console.time(String(url))
+    try {
+      return await fetch(url, init)
+    } finally {
+      console.timeEnd(String(url))
+    }
+  },
+})
+```
+
+## Automatic Retries
+
+Retries are off by default. Pass `retry` (empty object for the defaults) to
+retry rate limits (429), server errors (5xx), and network failures with
+exponential backoff and jitter. 429 responses honor the `Retry-After` header.
+
+```ts
+const client = new LumaClient({
+  apiKey,
+  retry: {
+    maxRetries: 2, // retries after the initial attempt (default 2)
+    initialDelayMs: 500, // base backoff delay (default 500)
+    maxDelayMs: 30_000, // cap for any single delay (default 30000)
+    backoffMultiplier: 2, // growth factor per attempt (default 2)
+  },
+})
+```
+
+Client errors (4xx other than 429), validation errors, and caller-initiated
+aborts are never retried. Note that with retries enabled, a POST that fails at
+the network layer may be retried after it reached the server — enable retries
+for mutating endpoints only if duplicates are acceptable or handled.
+
+## Cancellation
+
+Every resource method accepts an optional `{ signal }` as its last argument.
+The signal is combined with the client timeout via `AbortSignal.any()`, and
+aborting rejects the request with a `LumaAbortError`:
+
+```ts
+import { LumaAbortError } from 'luma-api-event-calendar-webhooks'
+
+const controller = new AbortController()
+const promise = client.calendar.listEvents({ limit: 50 }, { signal: controller.signal })
+
+controller.abort()
+
+try {
+  await promise
+} catch (error) {
+  if (error instanceof LumaAbortError) {
+    console.log('request cancelled')
+  }
+}
 ```
 
 Authentication uses the `x-luma-api-key` header. Luma docs include a simple curl example:
@@ -112,15 +184,19 @@ All methods are thin wrappers around the Luma REST endpoints. Request/response t
   - `sendInvites`, `addGuests`, `addHost`
   - `getCoupons`, `createCoupon`, `updateCoupon`
   - `listTicketTypes`, `getTicketType`, `createTicketType`, `updateTicketType`, `deleteTicketType`
+  - `getGuestsIterator`, `getCouponsIterator`
 - `client.calendar`
   - `listEvents`, `lookupEvent`, `listPeople`, `listPersonTags`
   - `listCoupons`, `createCoupon`, `updateCoupon`
   - `importPeople`, `createPersonTag`, `updatePersonTag`, `deletePersonTag`
   - `addEvent`, `applyPersonTag`, `removePersonTag`
+  - `listEventsIterator`, `listPeopleIterator`, `listPersonTagsIterator`, `listCouponsIterator`
 - `client.membership`
   - `listTiers`, `addMemberToTier`, `updateMemberStatus`
+  - `listTiersIterator`
 - `client.webhook`
   - `list`, `get`, `create`, `update`, `delete`
+  - `listIterator`
 - `client.entity`
   - `lookup`
 - `client.images`
@@ -184,6 +260,97 @@ Supported webhook types include:
 * `calendar.event.added`
 * `calendar.person.subscribed`
 
+## Webhook Signature Verification
+
+Luma signs every webhook delivery with an HMAC-SHA256 signature carried in the
+`webhook-signature` header (`t=<unix seconds>,v1=<hex digest>`), keyed with the
+webhook's `whsec_...` secret (returned when you create the webhook). Always
+verify the signature before trusting a delivery. See the
+[Luma webhooks docs](https://help.luma.com/p/webhooks).
+
+```ts
+import { Webhook } from 'luma-api-event-calendar-webhooks'
+
+// Use the RAW request body string — do not JSON.parse it first.
+const result = await Webhook.verifyWebhookSignature({
+  payload: rawBody,
+  header: request.headers.get(Webhook.WEBHOOK_SIGNATURE_HEADER),
+  secret: process.env.LUMA_WEBHOOK_SECRET!,
+})
+
+if (!result.valid) {
+  // result.reason: 'missing-header' | 'malformed-header' |
+  //                'timestamp-out-of-tolerance' | 'signature-mismatch'
+  return new Response('invalid signature', { status: 401 })
+}
+```
+
+Verification uses WebCrypto, so it works in Node.js, Deno, Bun, browsers, and
+edge runtimes. Timestamps outside a 5-minute window are rejected to prevent
+replay attacks (tune with `toleranceInSeconds`). Multiple `v1` signatures
+(e.g. during secret rotation) are all checked.
+
+## Typed Webhook Handler
+
+`createWebhookHandler` gives you exhaustive, narrowed callbacks per event type
+instead of switching on `payload.type` yourself. With a `secret`, the handler
+also exposes `handleRequest()` which verifies the signature before dispatching:
+
+```ts
+import { Webhook, LumaWebhookSignatureError } from 'luma-api-event-calendar-webhooks'
+
+const handler = Webhook.createWebhookHandler({
+  secret: process.env.LUMA_WEBHOOK_SECRET!,
+  onGuestRegistered: async (payload) => {
+    // payload is narrowed to GuestRegisteredPayload
+    console.log(payload.data.guest.email, payload.data.event.name)
+  },
+  onEventUpdated: (payload) => {
+    console.log('event updated:', payload.data.event.api_id)
+  },
+  onUnhandled: (payload) => {
+    console.log('ignoring', payload.type)
+  },
+})
+
+// Fetch-API style server (Deno, Bun, Cloudflare Workers, Next.js route handlers):
+export async function POST(request: Request): Promise<Response> {
+  const body = await request.text()
+  try {
+    await handler.handleRequest({
+      body,
+      signatureHeader: request.headers.get(Webhook.WEBHOOK_SIGNATURE_HEADER),
+    })
+    return new Response('ok')
+  } catch (error) {
+    if (error instanceof LumaWebhookSignatureError) {
+      return new Response('invalid signature', { status: 401 })
+    }
+    throw error
+  }
+}
+```
+
+With Express, make sure you read the raw body (e.g. `express.raw()` or
+`express.text()`) so the signature is computed over the exact bytes Luma sent:
+
+```ts
+app.post('/luma-webhook', express.text({ type: 'application/json' }), async (req, res) => {
+  try {
+    await handler.handleRequest({
+      body: req.body,
+      signatureHeader: req.header(Webhook.WEBHOOK_SIGNATURE_HEADER),
+    })
+    res.sendStatus(200)
+  } catch {
+    res.sendStatus(401)
+  }
+})
+```
+
+If you only need dispatching (verification handled elsewhere), omit the
+`secret` and call `handler.handle(parsedPayload)`.
+
 ## Pagination
 
 List endpoints accept `cursor` and `limit`. The client automatically maps them to
@@ -197,6 +364,37 @@ const page = await client.calendar.listEvents({
 
 if (page.has_more) {
   console.log(page.next_cursor)
+}
+```
+
+### Auto-pagination
+
+Every paginated endpoint has an `...Iterator` counterpart that fetches pages
+lazily as you consume it, so you never loop over cursors by hand:
+
+```ts
+for await (const entry of client.calendar.listEventsIterator({ limit: 50 })) {
+  console.log(entry.event.name)
+}
+
+for await (const guest of client.event.getGuestsIterator({ event_api_id: 'evt_123' })) {
+  console.log(guest.api_id)
+}
+```
+
+For page-level access, or to paginate a custom call, use the generic helpers:
+
+```ts
+import { paginateItems, paginatePages } from 'luma-api-event-calendar-webhooks'
+
+for await (const page of paginatePages((cursor) => client.webhook.list({ cursor }))) {
+  console.log(page.entries.length, page.next_cursor)
+}
+
+for await (const person of paginateItems((cursor) =>
+  client.calendar.listPeople({ cursor, limit: 100 })
+)) {
+  console.log(person.email)
 }
 ```
 
@@ -230,7 +428,11 @@ try {
 ```
 
 The `LumaRateLimitError` uses the response `Retry-After` header (seconds or HTTP-date).
-You can also use `parseRetryAfter` directly if needed.
+You can also use `parseRetryAfter` directly if needed, or enable the built-in
+retry policy (see "Automatic Retries") to have 429s handled for you.
+
+Additional error classes: `LumaAbortError` (caller cancelled via `AbortSignal`)
+and `LumaWebhookSignatureError` (webhook verification failed, with a `reason`).
 
 ## Rate Limits
 

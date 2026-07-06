@@ -27,6 +27,8 @@ export type {
   DebugRequest,
   DebugResponse,
   DebugOutcome,
+  RetryContext,
+  RetryHook,
 } from './client/index.js'
 
 // Error exports

@@ -5,6 +5,8 @@ import {
   LumaApiError,
   LumaNetworkError,
   LumaRateLimitError,
+  type DebugContext,
+  type RetryContext,
 } from '../src/index.js'
 import {
   computeRetryDelayMs,
@@ -245,5 +247,96 @@ describe('client retry integration', () => {
     await assertion
 
     expect(mockFetch).toHaveBeenCalledTimes(1)
+  })
+
+  it('should invoke onRetry before each backoff with the retry context', async () => {
+    const onRetry = vi.fn<[RetryContext], void>()
+    const client = new LumaClient({ apiKey: 'k', retry: {}, onRetry })
+    mockFetch
+      .mockResolvedValueOnce(
+        jsonResponse(
+          { message: 'rate limited' },
+          { ok: false, status: 429, headers: { 'retry-after': '1' } }
+        )
+      )
+      .mockResolvedValueOnce(jsonResponse(okBody))
+
+    const promise = client.user.getSelf()
+    await vi.advanceTimersByTimeAsync(1000)
+    await promise
+
+    expect(onRetry).toHaveBeenCalledTimes(1)
+    const context = onRetry.mock.calls[0]![0]
+    expect(context.attempt).toBe(0)
+    expect(context.delayMs).toBe(1000)
+    expect(context.error).toBeInstanceOf(LumaRateLimitError)
+    expect(context.request.method).toBe('GET')
+    expect(typeof context.requestId).toBe('string')
+  })
+
+  it('should report each failing attempt index and stop at maxRetries', async () => {
+    const onRetry = vi.fn<[RetryContext], void>()
+    const client = new LumaClient({
+      apiKey: 'k',
+      retry: { maxRetries: 2, initialDelayMs: 10 },
+      onRetry,
+    })
+    mockFetch.mockResolvedValue(jsonResponse({ message: 'oops' }, { ok: false, status: 500 }))
+
+    const promise = client.user.getSelf()
+    const assertion = expect(promise).rejects.toBeInstanceOf(LumaApiError)
+    await vi.advanceTimersByTimeAsync(1000)
+    await assertion
+
+    // maxRetries=2 => attempts 0 and 1 are retried; attempt 2 fails and rethrows.
+    expect(onRetry).toHaveBeenCalledTimes(2)
+    expect(onRetry.mock.calls[0]![0].attempt).toBe(0)
+    expect(onRetry.mock.calls[1]![0].attempt).toBe(1)
+    expect(mockFetch).toHaveBeenCalledTimes(3)
+  })
+
+  it('should keep a stable requestId and increment attempt across retries in debug', async () => {
+    const contexts: DebugContext[] = []
+    const client = new LumaClient({
+      apiKey: 'k',
+      retry: { initialDelayMs: 10 },
+      debug: (context) => {
+        contexts.push(context)
+      },
+    })
+    mockFetch
+      .mockResolvedValueOnce(jsonResponse({ message: 'oops' }, { ok: false, status: 500 }))
+      .mockResolvedValueOnce(jsonResponse(okBody))
+
+    const promise = client.user.getSelf()
+    await vi.advanceTimersByTimeAsync(10)
+    await promise
+
+    expect(contexts).toHaveLength(2)
+    expect(contexts[0]!.attempt).toBe(0)
+    expect(contexts[1]!.attempt).toBe(1)
+    expect(contexts[0]!.requestId).toBe(contexts[1]!.requestId)
+  })
+
+  it('should tolerate a throwing onRetry hook and still complete the request', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    const client = new LumaClient({
+      apiKey: 'k',
+      retry: { initialDelayMs: 10 },
+      onRetry: () => {
+        throw new Error('hook boom')
+      },
+    })
+    mockFetch
+      .mockResolvedValueOnce(jsonResponse({ message: 'oops' }, { ok: false, status: 500 }))
+      .mockResolvedValueOnce(jsonResponse(okBody))
+
+    const promise = client.user.getSelf()
+    await vi.advanceTimersByTimeAsync(10)
+    const result = await promise
+
+    expect(result.user.api_id).toBe('user-1')
+    expect(consoleError).toHaveBeenCalledWith('Luma retry hook error', expect.any(Error))
+    consoleError.mockRestore()
   })
 })

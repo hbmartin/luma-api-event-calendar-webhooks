@@ -119,6 +119,19 @@ aborts are never retried. Note that with retries enabled, a POST that fails at
 the network layer may be retried after it reached the server — enable retries
 for mutating endpoints only if duplicates are acceptable or handled.
 
+Pass an `onRetry` hook to observe retries. It fires once per scheduled retry,
+after the client decides to retry and before it waits out the backoff:
+
+```ts
+const client = new LumaClient({
+  apiKey,
+  retry: {},
+  onRetry: ({ requestId, attempt, delayMs, error }) => {
+    console.warn(`retrying ${requestId} (attempt ${attempt}) in ${delayMs}ms: ${error.message}`)
+  },
+})
+```
+
 ## Cancellation
 
 Every resource method accepts an optional `{ signal }` as its last argument.
@@ -168,8 +181,10 @@ const client = new LumaClient({
 
 The debug hook is called after each request completes with:
 
+- `requestId`: Stable id for the logical request, shared across retry attempts
+- `attempt`: Zero-based attempt index (0 is the initial try, 1+ are retries)
 - `request`: Method, URL, headers, and body (for POST/PUT/PATCH)
-- `outcome`: Either `{ type: 'success', response }` with status/headers/body, or `{ type: 'error', error }` for network failures
+- `outcome`: One of `{ type: 'success', response }`, `{ type: 'http-error', response }` (non-2xx status), or `{ type: 'network-error', error }` (network/timeout failures)
 - `durationMs`: Request duration in milliseconds
 
 ## Resources

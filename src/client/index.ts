@@ -50,6 +50,8 @@ export type {
   DebugRequest,
   DebugResponse,
   DebugOutcome,
+  RetryContext,
+  RetryHook,
 } from './fetcher.js'
 
 // Re-export pagination helpers

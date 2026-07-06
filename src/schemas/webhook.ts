@@ -195,3 +195,26 @@ export type WebhookPayload = z.infer<typeof WebhookPayloadSchema>
 export function parseWebhookPayload(payload: unknown): WebhookPayload {
   return WebhookPayloadSchema.parse(payload)
 }
+
+// Decodes a raw JSON string within the Zod pipeline, surfacing malformed JSON
+// as a Zod issue instead of a thrown SyntaxError.
+const RawJsonSchema = z.string().transform((value, context): unknown => {
+  try {
+    return JSON.parse(value)
+  } catch {
+    context.addIssue({ code: 'custom', message: 'Invalid JSON payload' })
+    return z.NEVER
+  }
+})
+
+// Parses and validates a webhook payload straight from the raw request body.
+export const WebhookPayloadFromStringSchema = RawJsonSchema.pipe(WebhookPayloadSchema)
+
+/**
+ * Parses and validates a webhook payload from the raw request body string.
+ * Decoding runs through Zod, so a malformed body raises a ZodError rather than
+ * a bare SyntaxError, keeping webhook handling on a single validation path.
+ */
+export function parseWebhookPayloadFromRawBody(rawBody: string): WebhookPayload {
+  return WebhookPayloadFromStringSchema.parse(rawBody)
+}

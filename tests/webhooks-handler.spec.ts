@@ -1,5 +1,6 @@
 import { createHmac } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
+import { ZodError } from 'zod'
 import { Webhook, LumaWebhookConfigurationError, LumaWebhookSignatureError } from '../src/index.js'
 
 const { createWebhookHandler } = Webhook
@@ -209,6 +210,38 @@ describe('createWebhookHandler', () => {
 
       await expect(attempt).rejects.toBeInstanceOf(LumaWebhookConfigurationError)
       await expect(attempt).rejects.toMatchObject({ reason: 'missing-secret' })
+    })
+
+    it('should raise a ZodError (not a SyntaxError) for a verified but malformed body', async () => {
+      const onEventCreated = vi.fn()
+      const handler = createWebhookHandler({ secret: SECRET, onEventCreated })
+      const malformed = 'not valid json{'
+      const timestamp = Math.floor(Date.now() / 1000)
+
+      const attempt = handler.handleRequest({
+        body: malformed,
+        signatureHeader: `t=${timestamp},v1=${sign(malformed, timestamp)}`,
+      })
+
+      await expect(attempt).rejects.toBeInstanceOf(ZodError)
+      expect(onEventCreated).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('parseWebhookPayloadFromRawBody', () => {
+    it('should parse and narrow a valid raw body', () => {
+      const parsed = Webhook.parseWebhookPayloadFromRawBody(JSON.stringify(eventCreatedPayload))
+      expect(parsed.type).toBe('event.created')
+    })
+
+    it('should throw a ZodError for malformed JSON', () => {
+      expect(() => Webhook.parseWebhookPayloadFromRawBody('not json{')).toThrow(ZodError)
+    })
+
+    it('should throw a ZodError for a valid JSON body with an unknown type', () => {
+      expect(() =>
+        Webhook.parseWebhookPayloadFromRawBody(JSON.stringify({ type: 'unknown.event' }))
+      ).toThrow(ZodError)
     })
   })
 })

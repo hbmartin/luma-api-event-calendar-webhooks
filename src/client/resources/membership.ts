@@ -3,12 +3,15 @@ import { Resource } from './base.js'
 import {
   type MembershipTier,
   type ListMembershipTiersParams,
+  ListMembershipTiersParamsSchema,
   ListMembershipTiersResponseSchema,
   type ListMembershipTiersResponse,
   type AddMemberToTierRequest,
+  AddMemberToTierRequestSchema,
   AddMemberToTierResponseSchema,
   type AddMemberToTierResponse,
   type UpdateMemberStatusRequest,
+  UpdateMemberStatusRequestSchema,
   UpdateMemberStatusResponseSchema,
   type UpdateMemberStatusResponse,
 } from '../../schemas/index.js'
@@ -23,9 +26,10 @@ export class MembershipResource extends Resource {
     params?: ListMembershipTiersParams,
     options?: PerRequestOptions
   ): Promise<ListMembershipTiersResponse> {
-    return this.fetcher.get(
+    return this.getValidated(
       '/v1/memberships/tiers/list',
       params,
+      ListMembershipTiersParamsSchema,
       ListMembershipTiersResponseSchema,
       options
     )
@@ -49,9 +53,10 @@ export class MembershipResource extends Resource {
     request: AddMemberToTierRequest,
     options?: PerRequestOptions
   ): Promise<AddMemberToTierResponse> {
-    return this.fetcher.post(
+    return this.postValidated(
       '/v1/memberships/members/add',
       request,
+      AddMemberToTierRequestSchema,
       AddMemberToTierResponseSchema,
       options
     )
@@ -65,9 +70,10 @@ export class MembershipResource extends Resource {
     request: UpdateMemberStatusRequest,
     options?: PerRequestOptions
   ): Promise<UpdateMemberStatusResponse> {
-    return this.fetcher.post(
+    return this.postValidated(
       '/v1/memberships/members/update-status',
       request,
+      UpdateMemberStatusRequestSchema,
       UpdateMemberStatusResponseSchema,
       options
     )

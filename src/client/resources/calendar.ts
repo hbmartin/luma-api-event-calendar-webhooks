@@ -6,45 +6,59 @@ import {
   type Person,
   type PersonTag,
   type ListCalendarEventsParams,
+  ListCalendarEventsParamsSchema,
   ListCalendarEventsResponseSchema,
   type ListCalendarEventsResponse,
   type ListPersonTagsParams,
+  ListPersonTagsParamsSchema,
   ListPersonTagsResponseSchema,
   type ListPersonTagsResponse,
   type LookupCalendarEventParams,
+  LookupCalendarEventParamsSchema,
   LookupCalendarEventResponseSchema,
   type LookupCalendarEventResponse,
   type ListPeopleParams,
+  ListPeopleParamsSchema,
   ListPeopleResponseSchema,
   type ListPeopleResponse,
   type ListCalendarCouponsParams,
+  ListCalendarCouponsParamsSchema,
   ListCalendarCouponsResponseSchema,
   type ListCalendarCouponsResponse,
   type CreateCalendarCouponRequest,
+  CreateCalendarCouponRequestSchema,
   CreateCalendarCouponResponseSchema,
   type CreateCalendarCouponResponse,
   type UpdateCalendarCouponRequest,
+  UpdateCalendarCouponRequestSchema,
   UpdateCalendarCouponResponseSchema,
   type UpdateCalendarCouponResponse,
   type ImportPeopleRequest,
+  ImportPeopleRequestSchema,
   ImportPeopleResponseSchema,
   type ImportPeopleResponse,
   type CreatePersonTagRequest,
+  CreatePersonTagRequestSchema,
   CreatePersonTagResponseSchema,
   type CreatePersonTagResponse,
   type UpdatePersonTagRequest,
+  UpdatePersonTagRequestSchema,
   UpdatePersonTagResponseSchema,
   type UpdatePersonTagResponse,
   type DeletePersonTagRequest,
+  DeletePersonTagRequestSchema,
   DeletePersonTagResponseSchema,
   type DeletePersonTagResponse,
   type AddEventToCalendarRequest,
+  AddEventToCalendarRequestSchema,
   AddEventToCalendarResponseSchema,
   type AddEventToCalendarResponse,
   type ApplyPersonTagRequest,
+  ApplyPersonTagRequestSchema,
   ApplyPersonTagResponseSchema,
   type ApplyPersonTagResponse,
   type RemovePersonTagRequest,
+  RemovePersonTagRequestSchema,
   RemovePersonTagResponseSchema,
   type RemovePersonTagResponse,
 } from '../../schemas/index.js'
@@ -59,9 +73,10 @@ export class CalendarResource extends Resource {
     params?: ListCalendarEventsParams,
     options?: PerRequestOptions
   ): Promise<ListCalendarEventsResponse> {
-    return this.fetcher.get(
+    return this.getValidated(
       '/v1/calendar/list-events',
       params,
+      ListCalendarEventsParamsSchema,
       ListCalendarEventsResponseSchema,
       options
     )
@@ -88,9 +103,10 @@ export class CalendarResource extends Resource {
     params?: ListPersonTagsParams,
     options?: PerRequestOptions
   ): Promise<ListPersonTagsResponse> {
-    return this.fetcher.get(
+    return this.getValidated(
       '/v1/calendar/list-person-tags',
       params,
+      ListPersonTagsParamsSchema,
       ListPersonTagsResponseSchema,
       options
     )
@@ -117,9 +133,10 @@ export class CalendarResource extends Resource {
     params: LookupCalendarEventParams,
     options?: PerRequestOptions
   ): Promise<LookupCalendarEventResponse> {
-    return this.fetcher.get(
+    return this.getValidated(
       '/v1/calendar/lookup-event',
       params,
+      LookupCalendarEventParamsSchema,
       LookupCalendarEventResponseSchema,
       options
     )
@@ -133,7 +150,13 @@ export class CalendarResource extends Resource {
     params?: ListPeopleParams,
     options?: PerRequestOptions
   ): Promise<ListPeopleResponse> {
-    return this.fetcher.get('/v1/calendar/list-people', params, ListPeopleResponseSchema, options)
+    return this.getValidated(
+      '/v1/calendar/list-people',
+      params,
+      ListPeopleParamsSchema,
+      ListPeopleResponseSchema,
+      options
+    )
   }
 
   /**
@@ -157,9 +180,10 @@ export class CalendarResource extends Resource {
     params?: ListCalendarCouponsParams,
     options?: PerRequestOptions
   ): Promise<ListCalendarCouponsResponse> {
-    return this.fetcher.get(
+    return this.getValidated(
       '/v1/calendar/coupons',
       params,
+      ListCalendarCouponsParamsSchema,
       ListCalendarCouponsResponseSchema,
       options
     )
@@ -186,9 +210,10 @@ export class CalendarResource extends Resource {
     request: CreateCalendarCouponRequest,
     options?: PerRequestOptions
   ): Promise<CreateCalendarCouponResponse> {
-    return this.fetcher.post(
+    return this.postValidated(
       '/v1/calendar/coupons/create',
       request,
+      CreateCalendarCouponRequestSchema,
       CreateCalendarCouponResponseSchema,
       options
     )
@@ -202,9 +227,10 @@ export class CalendarResource extends Resource {
     request: UpdateCalendarCouponRequest,
     options?: PerRequestOptions
   ): Promise<UpdateCalendarCouponResponse> {
-    return this.fetcher.post(
+    return this.postValidated(
       '/v1/calendar/coupons/update',
       request,
+      UpdateCalendarCouponRequestSchema,
       UpdateCalendarCouponResponseSchema,
       options
     )
@@ -218,9 +244,10 @@ export class CalendarResource extends Resource {
     request: ImportPeopleRequest,
     options?: PerRequestOptions
   ): Promise<ImportPeopleResponse> {
-    return this.fetcher.post(
+    return this.postValidated(
       '/v1/calendar/import-people',
       request,
+      ImportPeopleRequestSchema,
       ImportPeopleResponseSchema,
       options
     )
@@ -234,9 +261,10 @@ export class CalendarResource extends Resource {
     request: CreatePersonTagRequest,
     options?: PerRequestOptions
   ): Promise<CreatePersonTagResponse> {
-    return this.fetcher.post(
+    return this.postValidated(
       '/v1/calendar/create-person-tag',
       request,
+      CreatePersonTagRequestSchema,
       CreatePersonTagResponseSchema,
       options
     )
@@ -250,9 +278,10 @@ export class CalendarResource extends Resource {
     request: UpdatePersonTagRequest,
     options?: PerRequestOptions
   ): Promise<UpdatePersonTagResponse> {
-    return this.fetcher.post(
+    return this.postValidated(
       '/v1/calendar/update-person-tag',
       request,
+      UpdatePersonTagRequestSchema,
       UpdatePersonTagResponseSchema,
       options
     )
@@ -266,9 +295,10 @@ export class CalendarResource extends Resource {
     request: DeletePersonTagRequest,
     options?: PerRequestOptions
   ): Promise<DeletePersonTagResponse> {
-    return this.fetcher.post(
+    return this.postValidated(
       '/v1/calendar/delete-person-tag',
       request,
+      DeletePersonTagRequestSchema,
       DeletePersonTagResponseSchema,
       options
     )
@@ -282,9 +312,10 @@ export class CalendarResource extends Resource {
     request: AddEventToCalendarRequest,
     options?: PerRequestOptions
   ): Promise<AddEventToCalendarResponse> {
-    return this.fetcher.post(
+    return this.postValidated(
       '/v1/calendar/add-event',
       request,
+      AddEventToCalendarRequestSchema,
       AddEventToCalendarResponseSchema,
       options
     )
@@ -298,9 +329,10 @@ export class CalendarResource extends Resource {
     request: ApplyPersonTagRequest,
     options?: PerRequestOptions
   ): Promise<ApplyPersonTagResponse> {
-    return this.fetcher.post(
+    return this.postValidated(
       '/v1/calendar/person-tags/apply',
       request,
+      ApplyPersonTagRequestSchema,
       ApplyPersonTagResponseSchema,
       options
     )
@@ -314,9 +346,10 @@ export class CalendarResource extends Resource {
     request: RemovePersonTagRequest,
     options?: PerRequestOptions
   ): Promise<RemovePersonTagResponse> {
-    return this.fetcher.post(
+    return this.postValidated(
       '/v1/calendar/person-tags/unapply',
       request,
+      RemovePersonTagRequestSchema,
       RemovePersonTagResponseSchema,
       options
     )

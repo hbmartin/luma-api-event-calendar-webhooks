@@ -219,6 +219,31 @@ All methods are thin wrappers around the Luma REST endpoints. Request/response t
 
 For full request/response shapes, use the exported schemas and types.
 
+## Input Validation and IDs
+
+Every request's params and body are validated with Zod before the network call,
+so bad input fails fast with a `LumaValidationError` rather than a wasted round
+trip. Resource ids are accepted as plain strings on input and returned as
+branded types on output, so an `EventApiId` can't be passed where a `CalendarId`
+is expected:
+
+```ts
+import { LumaClient, LumaValidationError } from 'luma-api-event-calendar-webhooks'
+
+const client = new LumaClient({ apiKey: process.env.LUMA_API_KEY! })
+
+// Plain string in; validated and narrowed internally.
+const { event } = await client.event.get({ event_api_id: 'evt-123' })
+
+try {
+  await client.event.get({ event_api_id: '' }) // blank id
+} catch (error) {
+  if (error instanceof LumaValidationError) {
+    console.error('invalid request:', error.issues)
+  }
+}
+```
+
 ## Using Types and Schemas
 
 Types are exported via resource namespaces for clean imports:
@@ -435,7 +460,7 @@ try {
   } else if (error instanceof LumaAuthenticationError) {
     console.error('Invalid API key')
   } else if (error instanceof LumaValidationError) {
-    console.error('Response schema mismatch:', error.issues)
+    console.error('Request or response schema mismatch:', error.issues)
   } else {
     throw error
   }

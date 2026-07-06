@@ -3,18 +3,23 @@ import { Resource } from './base.js'
 import {
   type Webhook,
   type ListWebhooksParams,
+  ListWebhooksParamsSchema,
   ListWebhooksResponseSchema,
   type ListWebhooksResponse,
   type GetWebhookParams,
+  GetWebhookParamsSchema,
   GetWebhookResponseSchema,
   type GetWebhookResponse,
   type CreateWebhookRequest,
+  CreateWebhookRequestSchema,
   CreateWebhookResponseSchema,
   type CreateWebhookResponse,
   type UpdateWebhookRequest,
+  UpdateWebhookRequestSchema,
   UpdateWebhookResponseSchema,
   type UpdateWebhookResponse,
   type DeleteWebhookRequest,
+  DeleteWebhookRequestSchema,
   DeleteWebhookResponseSchema,
   type DeleteWebhookResponse,
 } from '../../schemas/index.js'
@@ -29,7 +34,13 @@ export class WebhookResource extends Resource {
     params?: ListWebhooksParams,
     options?: PerRequestOptions
   ): Promise<ListWebhooksResponse> {
-    return this.fetcher.get('/v1/webhooks/list', params, ListWebhooksResponseSchema, options)
+    return this.getValidated(
+      '/v1/webhooks/list',
+      params,
+      ListWebhooksParamsSchema,
+      ListWebhooksResponseSchema,
+      options
+    )
   }
 
   /**
@@ -47,9 +58,10 @@ export class WebhookResource extends Resource {
    * GET /v1/webhooks/get
    */
   async get(params: GetWebhookParams, options?: PerRequestOptions): Promise<GetWebhookResponse> {
-    return this.fetcher.get(
+    return this.getValidated(
       '/v1/webhooks/get',
-      { webhook_api_id: params.webhook_api_id },
+      params,
+      GetWebhookParamsSchema,
       GetWebhookResponseSchema,
       options
     )
@@ -63,7 +75,13 @@ export class WebhookResource extends Resource {
     request: CreateWebhookRequest,
     options?: PerRequestOptions
   ): Promise<CreateWebhookResponse> {
-    return this.fetcher.post('/v1/webhooks/create', request, CreateWebhookResponseSchema, options)
+    return this.postValidated(
+      '/v1/webhooks/create',
+      request,
+      CreateWebhookRequestSchema,
+      CreateWebhookResponseSchema,
+      options
+    )
   }
 
   /**
@@ -74,7 +92,13 @@ export class WebhookResource extends Resource {
     request: UpdateWebhookRequest,
     options?: PerRequestOptions
   ): Promise<UpdateWebhookResponse> {
-    return this.fetcher.post('/v1/webhooks/update', request, UpdateWebhookResponseSchema, options)
+    return this.postValidated(
+      '/v1/webhooks/update',
+      request,
+      UpdateWebhookRequestSchema,
+      UpdateWebhookResponseSchema,
+      options
+    )
   }
 
   /**
@@ -85,6 +109,12 @@ export class WebhookResource extends Resource {
     request: DeleteWebhookRequest,
     options?: PerRequestOptions
   ): Promise<DeleteWebhookResponse> {
-    return this.fetcher.post('/v1/webhooks/delete', request, DeleteWebhookResponseSchema, options)
+    return this.postValidated(
+      '/v1/webhooks/delete',
+      request,
+      DeleteWebhookRequestSchema,
+      DeleteWebhookResponseSchema,
+      options
+    )
   }
 }

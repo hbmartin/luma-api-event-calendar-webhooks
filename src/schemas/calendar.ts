@@ -24,7 +24,7 @@ export const ListCalendarEventsParamsSchema = PaginationParamsSchema.extend({
   sort_direction: SortDirectionSchema.optional(),
 })
 
-export interface ListCalendarEventsParams extends z.infer<typeof ListCalendarEventsParamsSchema> {}
+export interface ListCalendarEventsParams extends z.input<typeof ListCalendarEventsParamsSchema> {}
 
 // List calendar events response
 export const ListCalendarEventsResponseSchema = PaginatedResponseSchema(CalendarEventEntrySchema)
@@ -46,11 +46,12 @@ export interface PersonTag extends z.infer<typeof PersonTagSchema> {}
 
 // List person tags params
 export const ListPersonTagsParamsSchema = PaginationParamsSchema.extend({
+  calendar_api_id: LumaId.CalendarIdSchema.optional(),
   sort_column: z.enum(['name', 'created_at']).optional(),
   sort_direction: SortDirectionSchema.optional(),
 })
 
-export interface ListPersonTagsParams extends z.infer<typeof ListPersonTagsParamsSchema> {}
+export interface ListPersonTagsParams extends z.input<typeof ListPersonTagsParamsSchema> {}
 
 // List person tags response
 export const ListPersonTagsResponseSchema = PaginatedResponseSchema(PersonTagSchema)
@@ -75,7 +76,7 @@ export const LookupCalendarEventParamsSchema = z.union([
   CalendarEventLookupByUrlSchema,
 ])
 
-export type LookupCalendarEventParams = z.infer<typeof LookupCalendarEventParamsSchema>
+export type LookupCalendarEventParams = z.input<typeof LookupCalendarEventParamsSchema>
 
 // Lookup event response
 export const LookupCalendarEventResponseSchema = z.object({
@@ -118,7 +119,7 @@ export const ListPeopleParamsSchema = PaginationParamsSchema.extend({
   sort_direction: SortDirectionSchema.optional(),
 })
 
-export interface ListPeopleParams extends z.infer<typeof ListPeopleParamsSchema> {}
+export interface ListPeopleParams extends z.input<typeof ListPeopleParamsSchema> {}
 
 // List people response
 export const ListPeopleResponseSchema = PaginatedResponseSchema(PersonSchema)
@@ -128,7 +129,7 @@ export interface ListPeopleResponse extends z.infer<typeof ListPeopleResponseSch
 // List calendar coupons params
 export const ListCalendarCouponsParamsSchema = PaginationParamsSchema
 
-export interface ListCalendarCouponsParams extends z.infer<
+export interface ListCalendarCouponsParams extends z.input<
   typeof ListCalendarCouponsParamsSchema
 > {}
 
@@ -162,7 +163,7 @@ export const CreateCalendarCouponRequestSchema = z.union([
   CreateCalendarCouponFixedAmountSchema,
 ])
 
-export type CreateCalendarCouponRequest = z.infer<typeof CreateCalendarCouponRequestSchema>
+export type CreateCalendarCouponRequest = z.input<typeof CreateCalendarCouponRequestSchema>
 
 // Create calendar coupon response
 export const CreateCalendarCouponResponseSchema = z.object({
@@ -181,7 +182,7 @@ export const UpdateCalendarCouponRequestSchema = z.object({
   valid_until: z.string().optional(),
 })
 
-export interface UpdateCalendarCouponRequest extends z.infer<
+export interface UpdateCalendarCouponRequest extends z.input<
   typeof UpdateCalendarCouponRequestSchema
 > {}
 
@@ -204,7 +205,7 @@ export const ImportPersonInputSchema = z.object({
   bio: z.string().optional(),
 })
 
-export interface ImportPersonInput extends z.infer<typeof ImportPersonInputSchema> {}
+export interface ImportPersonInput extends z.input<typeof ImportPersonInputSchema> {}
 
 // Import people request
 export const ImportPeopleRequestSchema = z.object({
@@ -212,7 +213,7 @@ export const ImportPeopleRequestSchema = z.object({
   tag_api_ids: z.array(z.string()).optional(),
 })
 
-export interface ImportPeopleRequest extends z.infer<typeof ImportPeopleRequestSchema> {}
+export interface ImportPeopleRequest extends z.input<typeof ImportPeopleRequestSchema> {}
 
 // Import people response
 export const ImportPeopleResponseSchema = z.object({
@@ -228,7 +229,7 @@ export const CreatePersonTagRequestSchema = z.object({
   color: TagColorSchema.optional(),
 })
 
-export interface CreatePersonTagRequest extends z.infer<typeof CreatePersonTagRequestSchema> {}
+export interface CreatePersonTagRequest extends z.input<typeof CreatePersonTagRequestSchema> {}
 
 // Create person tag response
 export const CreatePersonTagResponseSchema = z.object({
@@ -244,7 +245,7 @@ export const UpdatePersonTagRequestSchema = z.object({
   color: TagColorSchema.optional(),
 })
 
-export interface UpdatePersonTagRequest extends z.infer<typeof UpdatePersonTagRequestSchema> {}
+export interface UpdatePersonTagRequest extends z.input<typeof UpdatePersonTagRequestSchema> {}
 
 // Update person tag response
 export const UpdatePersonTagResponseSchema = z.object({
@@ -258,7 +259,7 @@ export const DeletePersonTagRequestSchema = z.object({
   tag_api_id: LumaId.PersonTagApiIdSchema,
 })
 
-export interface DeletePersonTagRequest extends z.infer<typeof DeletePersonTagRequestSchema> {}
+export interface DeletePersonTagRequest extends z.input<typeof DeletePersonTagRequestSchema> {}
 
 // Delete person tag response
 export const DeletePersonTagResponseSchema = z.object({
@@ -285,7 +286,7 @@ export const AddEventToCalendarRequestSchema = z.union([
   AddEventToCalendarByUrlSchema,
 ])
 
-export type AddEventToCalendarRequest = z.infer<typeof AddEventToCalendarRequestSchema>
+export type AddEventToCalendarRequest = z.input<typeof AddEventToCalendarRequestSchema>
 
 // Add event to calendar response
 export const AddEventToCalendarResponseSchema = z.object({
@@ -308,7 +309,7 @@ export const ApplyPersonTagRequestSchema = z
     message: 'Either user_api_ids or emails must be provided.',
   })
 
-export interface ApplyPersonTagRequest extends z.infer<typeof ApplyPersonTagRequestSchema> {}
+export interface ApplyPersonTagRequest extends z.input<typeof ApplyPersonTagRequestSchema> {}
 
 // Apply person tag response
 export const ApplyPersonTagResponseSchema = z.object({
@@ -329,7 +330,7 @@ export const RemovePersonTagRequestSchema = z
     message: 'Either user_api_ids or emails must be provided.',
   })
 
-export interface RemovePersonTagRequest extends z.infer<typeof RemovePersonTagRequestSchema> {}
+export interface RemovePersonTagRequest extends z.input<typeof RemovePersonTagRequestSchema> {}
 
 // Remove person tag response
 export const RemovePersonTagResponseSchema = z.object({

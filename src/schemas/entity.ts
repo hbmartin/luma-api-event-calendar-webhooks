@@ -7,7 +7,7 @@ export const LookupEntityParamsSchema = z.object({
   slug: z.string(),
 })
 
-export interface LookupEntityParams extends z.infer<typeof LookupEntityParamsSchema> {}
+export interface LookupEntityParams extends z.input<typeof LookupEntityParamsSchema> {}
 
 // Entity schema
 export const EntitySchema = z.object({

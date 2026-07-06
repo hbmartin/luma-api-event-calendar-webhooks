@@ -7,7 +7,7 @@ export const CreateUploadUrlRequestSchema = z.object({
   content_type: z.string(),
 })
 
-export interface CreateUploadUrlRequest extends z.infer<typeof CreateUploadUrlRequestSchema> {}
+export interface CreateUploadUrlRequest extends z.input<typeof CreateUploadUrlRequestSchema> {}
 
 // Create upload URL response
 export const CreateUploadUrlResponseSchema = z.object({

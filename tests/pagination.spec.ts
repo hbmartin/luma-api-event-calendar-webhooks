@@ -186,7 +186,7 @@ describe('resource iterators', () => {
     )
     expect(mockFetch).toHaveBeenNthCalledWith(
       2,
-      `${BASE_URL}/v1/webhooks/list?pagination_limit=2&pagination_cursor=page-2`,
+      `${BASE_URL}/v1/webhooks/list?pagination_cursor=page-2&pagination_limit=2`,
       expect.any(Object)
     )
   })

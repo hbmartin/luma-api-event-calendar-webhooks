@@ -495,6 +495,7 @@ describe('LumaClient', () => {
       })
 
       await client.webhook.create({
+        calendar_id: 'cal-123',
         url: 'https://example.com',
         event_types: [],
       })

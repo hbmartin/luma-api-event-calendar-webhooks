@@ -2,6 +2,7 @@ import type { PerRequestOptions } from '../fetcher.js'
 import { Resource } from './base.js'
 import {
   type CreateUploadUrlRequest,
+  CreateUploadUrlRequestSchema,
   CreateUploadUrlResponseSchema,
   type CreateUploadUrlResponse,
 } from '../../schemas/index.js'
@@ -15,9 +16,10 @@ export class ImagesResource extends Resource {
     request: CreateUploadUrlRequest,
     options?: PerRequestOptions
   ): Promise<CreateUploadUrlResponse> {
-    return this.fetcher.post(
+    return this.postValidated(
       '/v1/images/create-upload-url',
       request,
+      CreateUploadUrlRequestSchema,
       CreateUploadUrlResponseSchema,
       options
     )

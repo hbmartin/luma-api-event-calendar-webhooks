@@ -24,9 +24,11 @@ export const WebhookSchema = z.object({
 export interface Webhook extends z.infer<typeof WebhookSchema> {}
 
 // List webhooks params
-export const ListWebhooksParamsSchema = PaginationParamsSchema
+export const ListWebhooksParamsSchema = PaginationParamsSchema.extend({
+  calendar_api_id: LumaId.CalendarIdSchema.optional(),
+})
 
-export interface ListWebhooksParams extends z.infer<typeof ListWebhooksParamsSchema> {}
+export interface ListWebhooksParams extends z.input<typeof ListWebhooksParamsSchema> {}
 
 // List webhooks response
 export const ListWebhooksResponseSchema = PaginatedResponseSchema(WebhookSchema)
@@ -38,7 +40,7 @@ export const GetWebhookParamsSchema = z.object({
   webhook_api_id: LumaId.WebhookApiIdSchema,
 })
 
-export interface GetWebhookParams extends z.infer<typeof GetWebhookParamsSchema> {}
+export interface GetWebhookParams extends z.input<typeof GetWebhookParamsSchema> {}
 
 // Get webhook response
 export const GetWebhookResponseSchema = z.object({
@@ -54,7 +56,7 @@ export const CreateWebhookRequestSchema = z.object({
   event_types: z.array(WebhookEventTypeSchema),
 })
 
-export interface CreateWebhookRequest extends z.infer<typeof CreateWebhookRequestSchema> {}
+export interface CreateWebhookRequest extends z.input<typeof CreateWebhookRequestSchema> {}
 
 // Create webhook response
 export const CreateWebhookResponseSchema = z.object({
@@ -71,7 +73,7 @@ export const UpdateWebhookRequestSchema = z.object({
   status: WebhookStatusSchema.optional(),
 })
 
-export interface UpdateWebhookRequest extends z.infer<typeof UpdateWebhookRequestSchema> {}
+export interface UpdateWebhookRequest extends z.input<typeof UpdateWebhookRequestSchema> {}
 
 // Update webhook response
 export const UpdateWebhookResponseSchema = z.object({
@@ -85,7 +87,7 @@ export const DeleteWebhookRequestSchema = z.object({
   webhook_api_id: LumaId.WebhookApiIdSchema,
 })
 
-export interface DeleteWebhookRequest extends z.infer<typeof DeleteWebhookRequestSchema> {}
+export interface DeleteWebhookRequest extends z.input<typeof DeleteWebhookRequestSchema> {}
 
 // Delete webhook response
 export const DeleteWebhookResponseSchema = z.object({

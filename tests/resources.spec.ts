@@ -133,19 +133,16 @@ describe('CalendarResource', () => {
         url: 'https://lu.ma/my-event',
       })
 
-      expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('url='),
-        expect.any(Object)
-      )
+      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('url='), expect.any(Object))
       expect(result.event?.name).toBe('URL Event')
     })
 
     it('should throw LumaNetworkError when fetch rejects', async () => {
       mockFetch.mockRejectedValueOnce(new Error('Connection refused'))
 
-      await expect(
-        client.calendar.lookupEvent({ event_api_id: 'evt-123' })
-      ).rejects.toThrow(LumaNetworkError)
+      await expect(client.calendar.lookupEvent({ event_api_id: 'evt-123' })).rejects.toThrow(
+        LumaNetworkError
+      )
     })
 
     it('should throw LumaApiError when response is not ok', async () => {
@@ -156,9 +153,9 @@ describe('CalendarResource', () => {
         text: async () => JSON.stringify({ message: 'Forbidden' }),
       })
 
-      await expect(
-        client.calendar.lookupEvent({ event_api_id: 'evt-123' })
-      ).rejects.toThrow(LumaApiError)
+      await expect(client.calendar.lookupEvent({ event_api_id: 'evt-123' })).rejects.toThrow(
+        LumaApiError
+      )
     })
   })
 
@@ -226,10 +223,7 @@ describe('CalendarResource', () => {
 
       const result = await client.calendar.listCoupons()
 
-      expect(mockFetch).toHaveBeenCalledWith(
-        `${BASE_URL}/v1/calendar/coupons`,
-        expect.any(Object)
-      )
+      expect(mockFetch).toHaveBeenCalledWith(`${BASE_URL}/v1/calendar/coupons`, expect.any(Object))
       expect(result.entries).toHaveLength(1)
     })
 
@@ -459,9 +453,9 @@ describe('CalendarResource', () => {
     it('should throw LumaNetworkError when fetch rejects', async () => {
       mockFetch.mockRejectedValueOnce(new Error('ECONNREFUSED'))
 
-      await expect(
-        client.calendar.createPersonTag({ name: 'Test' })
-      ).rejects.toThrow(LumaNetworkError)
+      await expect(client.calendar.createPersonTag({ name: 'Test' })).rejects.toThrow(
+        LumaNetworkError
+      )
     })
 
     it('should throw LumaApiError when response is not ok', async () => {
@@ -472,9 +466,9 @@ describe('CalendarResource', () => {
         text: async () => JSON.stringify({ message: 'Tag name already exists' }),
       })
 
-      await expect(
-        client.calendar.createPersonTag({ name: 'Duplicate' })
-      ).rejects.toThrow(LumaApiError)
+      await expect(client.calendar.createPersonTag({ name: 'Duplicate' })).rejects.toThrow(
+        LumaApiError
+      )
     })
   })
 
@@ -548,9 +542,9 @@ describe('CalendarResource', () => {
     it('should throw LumaNetworkError when fetch rejects', async () => {
       mockFetch.mockRejectedValueOnce(new Error('Request failed'))
 
-      await expect(
-        client.calendar.deletePersonTag({ tag_api_id: 'tag-1' })
-      ).rejects.toThrow(LumaNetworkError)
+      await expect(client.calendar.deletePersonTag({ tag_api_id: 'tag-1' })).rejects.toThrow(
+        LumaNetworkError
+      )
     })
 
     it('should throw LumaApiError when response is not ok', async () => {
@@ -561,9 +555,9 @@ describe('CalendarResource', () => {
         text: async () => JSON.stringify({ message: 'Permission denied' }),
       })
 
-      await expect(
-        client.calendar.deletePersonTag({ tag_api_id: 'tag-1' })
-      ).rejects.toThrow(LumaApiError)
+      await expect(client.calendar.deletePersonTag({ tag_api_id: 'tag-1' })).rejects.toThrow(
+        LumaApiError
+      )
     })
   })
 
@@ -613,9 +607,9 @@ describe('CalendarResource', () => {
     it('should throw LumaNetworkError when fetch rejects', async () => {
       mockFetch.mockRejectedValueOnce(new Error('Connection timeout'))
 
-      await expect(
-        client.calendar.addEvent({ event_api_id: 'evt-123' })
-      ).rejects.toThrow(LumaNetworkError)
+      await expect(client.calendar.addEvent({ event_api_id: 'evt-123' })).rejects.toThrow(
+        LumaNetworkError
+      )
     })
 
     it('should throw LumaApiError when response is not ok', async () => {
@@ -626,9 +620,9 @@ describe('CalendarResource', () => {
         text: async () => JSON.stringify({ message: 'Event not found' }),
       })
 
-      await expect(
-        client.calendar.addEvent({ event_api_id: 'nonexistent' })
-      ).rejects.toThrow(LumaApiError)
+      await expect(client.calendar.addEvent({ event_api_id: 'nonexistent' })).rejects.toThrow(
+        LumaApiError
+      )
     })
   })
 
@@ -1198,10 +1192,7 @@ describe('WebhookResource', () => {
 
       const result = await client.webhook.list()
 
-      expect(mockFetch).toHaveBeenCalledWith(
-        `${BASE_URL}/v1/webhooks/list`,
-        expect.any(Object)
-      )
+      expect(mockFetch).toHaveBeenCalledWith(`${BASE_URL}/v1/webhooks/list`, expect.any(Object))
       expect(result.entries).toHaveLength(1)
     })
 

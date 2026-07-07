@@ -4,54 +4,71 @@ import {
   type Coupon,
   type Guest,
   type GetEventParams,
+  GetEventParamsSchema,
   GetEventResponseSchema,
   type GetEventResponse,
   type GetGuestParams,
+  GetGuestParamsSchema,
   GetGuestResponseSchema,
   type GetGuestResponse,
   type GetGuestsParams,
+  GetGuestsParamsSchema,
   GetGuestsResponseSchema,
   type GetGuestsResponse,
   type CreateEventRequest,
+  CreateEventRequestSchema,
   CreateEventResponseSchema,
   type CreateEventResponse,
   type UpdateEventRequest,
+  UpdateEventRequestSchema,
   UpdateEventResponseSchema,
   type UpdateEventResponse,
   type UpdateGuestStatusRequest,
+  UpdateGuestStatusRequestSchema,
   UpdateGuestStatusResponseSchema,
   type UpdateGuestStatusResponse,
   type AddGuestsRequest,
+  AddGuestsRequestSchema,
   AddGuestsResponseSchema,
   type AddGuestsResponse,
   type SendInvitesRequest,
+  SendInvitesRequestSchema,
   SendInvitesResponseSchema,
   type SendInvitesResponse,
   type AddHostRequest,
+  AddHostRequestSchema,
   AddHostResponseSchema,
   type AddHostResponse,
   type GetEventCouponsParams,
+  GetEventCouponsParamsSchema,
   GetEventCouponsResponseSchema,
   type GetEventCouponsResponse,
   type CreateEventCouponRequest,
+  CreateEventCouponRequestSchema,
   CreateEventCouponResponseSchema,
   type CreateEventCouponResponse,
   type UpdateEventCouponRequest,
+  UpdateEventCouponRequestSchema,
   UpdateEventCouponResponseSchema,
   type UpdateEventCouponResponse,
   type ListTicketTypesParams,
+  ListTicketTypesParamsSchema,
   ListTicketTypesResponseSchema,
   type ListTicketTypesResponse,
   type GetTicketTypeParams,
+  GetTicketTypeParamsSchema,
   GetTicketTypeResponseSchema,
   type GetTicketTypeResponse,
   type CreateTicketTypeRequest,
+  CreateTicketTypeRequestSchema,
   CreateTicketTypeResponseSchema,
   type CreateTicketTypeResponse,
   type UpdateTicketTypeRequest,
+  UpdateTicketTypeRequestSchema,
   UpdateTicketTypeResponseSchema,
   type UpdateTicketTypeResponse,
   type DeleteTicketTypeRequest,
+  DeleteTicketTypeRequestSchema,
   DeleteTicketTypeResponseSchema,
   type DeleteTicketTypeResponse,
 } from '../../schemas/index.js'
@@ -63,9 +80,10 @@ export class EventResource extends Resource {
    * GET /v1/event/get
    */
   async get(params: GetEventParams, options?: PerRequestOptions): Promise<GetEventResponse> {
-    return this.fetcher.get(
+    return this.getValidated(
       '/v1/event/get',
-      { event_api_id: params.event_api_id },
+      params,
+      GetEventParamsSchema,
       GetEventResponseSchema,
       options
     )
@@ -76,7 +94,13 @@ export class EventResource extends Resource {
    * GET /v1/event/get-guest
    */
   async getGuest(params: GetGuestParams, options?: PerRequestOptions): Promise<GetGuestResponse> {
-    return this.fetcher.get('/v1/event/get-guest', params, GetGuestResponseSchema, options)
+    return this.getValidated(
+      '/v1/event/get-guest',
+      params,
+      GetGuestParamsSchema,
+      GetGuestResponseSchema,
+      options
+    )
   }
 
   /**
@@ -87,7 +111,13 @@ export class EventResource extends Resource {
     params: GetGuestsParams,
     options?: PerRequestOptions
   ): Promise<GetGuestsResponse> {
-    return this.fetcher.get('/v1/event/get-guests', params, GetGuestsResponseSchema, options)
+    return this.getValidated(
+      '/v1/event/get-guests',
+      params,
+      GetGuestsParamsSchema,
+      GetGuestsResponseSchema,
+      options
+    )
   }
 
   /**
@@ -108,7 +138,13 @@ export class EventResource extends Resource {
     request: CreateEventRequest,
     options?: PerRequestOptions
   ): Promise<CreateEventResponse> {
-    return this.fetcher.post('/v1/event/create', request, CreateEventResponseSchema, options)
+    return this.postValidated(
+      '/v1/event/create',
+      request,
+      CreateEventRequestSchema,
+      CreateEventResponseSchema,
+      options
+    )
   }
 
   /**
@@ -119,7 +155,13 @@ export class EventResource extends Resource {
     request: UpdateEventRequest,
     options?: PerRequestOptions
   ): Promise<UpdateEventResponse> {
-    return this.fetcher.post('/v1/event/update', request, UpdateEventResponseSchema, options)
+    return this.postValidated(
+      '/v1/event/update',
+      request,
+      UpdateEventRequestSchema,
+      UpdateEventResponseSchema,
+      options
+    )
   }
 
   /**
@@ -130,9 +172,10 @@ export class EventResource extends Resource {
     request: UpdateGuestStatusRequest,
     options?: PerRequestOptions
   ): Promise<UpdateGuestStatusResponse> {
-    return this.fetcher.post(
+    return this.postValidated(
       '/v1/event/update-guest-status',
       request,
+      UpdateGuestStatusRequestSchema,
       UpdateGuestStatusResponseSchema,
       options
     )
@@ -146,7 +189,13 @@ export class EventResource extends Resource {
     request: SendInvitesRequest,
     options?: PerRequestOptions
   ): Promise<SendInvitesResponse> {
-    return this.fetcher.post('/v1/event/send-invites', request, SendInvitesResponseSchema, options)
+    return this.postValidated(
+      '/v1/event/send-invites',
+      request,
+      SendInvitesRequestSchema,
+      SendInvitesResponseSchema,
+      options
+    )
   }
 
   /**
@@ -157,7 +206,13 @@ export class EventResource extends Resource {
     request: AddGuestsRequest,
     options?: PerRequestOptions
   ): Promise<AddGuestsResponse> {
-    return this.fetcher.post('/v1/event/add-guests', request, AddGuestsResponseSchema, options)
+    return this.postValidated(
+      '/v1/event/add-guests',
+      request,
+      AddGuestsRequestSchema,
+      AddGuestsResponseSchema,
+      options
+    )
   }
 
   /**
@@ -165,7 +220,13 @@ export class EventResource extends Resource {
    * POST /v1/event/add-host
    */
   async addHost(request: AddHostRequest, options?: PerRequestOptions): Promise<AddHostResponse> {
-    return this.fetcher.post('/v1/event/add-host', request, AddHostResponseSchema, options)
+    return this.postValidated(
+      '/v1/event/add-host',
+      request,
+      AddHostRequestSchema,
+      AddHostResponseSchema,
+      options
+    )
   }
 
   /**
@@ -176,7 +237,13 @@ export class EventResource extends Resource {
     params: GetEventCouponsParams,
     options?: PerRequestOptions
   ): Promise<GetEventCouponsResponse> {
-    return this.fetcher.get('/v1/event/coupons', params, GetEventCouponsResponseSchema, options)
+    return this.getValidated(
+      '/v1/event/coupons',
+      params,
+      GetEventCouponsParamsSchema,
+      GetEventCouponsResponseSchema,
+      options
+    )
   }
 
   /**
@@ -197,9 +264,10 @@ export class EventResource extends Resource {
     request: CreateEventCouponRequest,
     options?: PerRequestOptions
   ): Promise<CreateEventCouponResponse> {
-    return this.fetcher.post(
+    return this.postValidated(
       '/v1/event/create-coupon',
       request,
+      CreateEventCouponRequestSchema,
       CreateEventCouponResponseSchema,
       options
     )
@@ -213,9 +281,10 @@ export class EventResource extends Resource {
     request: UpdateEventCouponRequest,
     options?: PerRequestOptions
   ): Promise<UpdateEventCouponResponse> {
-    return this.fetcher.post(
+    return this.postValidated(
       '/v1/event/update-coupon',
       request,
+      UpdateEventCouponRequestSchema,
       UpdateEventCouponResponseSchema,
       options
     )
@@ -229,9 +298,10 @@ export class EventResource extends Resource {
     params: ListTicketTypesParams,
     options?: PerRequestOptions
   ): Promise<ListTicketTypesResponse> {
-    return this.fetcher.get(
+    return this.getValidated(
       '/v1/event/ticket-types/list',
       params,
+      ListTicketTypesParamsSchema,
       ListTicketTypesResponseSchema,
       options
     )
@@ -245,9 +315,10 @@ export class EventResource extends Resource {
     params: GetTicketTypeParams,
     options?: PerRequestOptions
   ): Promise<GetTicketTypeResponse> {
-    return this.fetcher.get(
+    return this.getValidated(
       '/v1/event/ticket-types/get',
       params,
+      GetTicketTypeParamsSchema,
       GetTicketTypeResponseSchema,
       options
     )
@@ -261,9 +332,10 @@ export class EventResource extends Resource {
     request: CreateTicketTypeRequest,
     options?: PerRequestOptions
   ): Promise<CreateTicketTypeResponse> {
-    return this.fetcher.post(
+    return this.postValidated(
       '/v1/event/ticket-types/create',
       request,
+      CreateTicketTypeRequestSchema,
       CreateTicketTypeResponseSchema,
       options
     )
@@ -277,9 +349,10 @@ export class EventResource extends Resource {
     request: UpdateTicketTypeRequest,
     options?: PerRequestOptions
   ): Promise<UpdateTicketTypeResponse> {
-    return this.fetcher.post(
+    return this.postValidated(
       '/v1/event/ticket-types/update',
       request,
+      UpdateTicketTypeRequestSchema,
       UpdateTicketTypeResponseSchema,
       options
     )
@@ -293,9 +366,10 @@ export class EventResource extends Resource {
     request: DeleteTicketTypeRequest,
     options?: PerRequestOptions
   ): Promise<DeleteTicketTypeResponse> {
-    return this.fetcher.post(
+    return this.postValidated(
       '/v1/event/ticket-types/delete',
       request,
+      DeleteTicketTypeRequestSchema,
       DeleteTicketTypeResponseSchema,
       options
     )

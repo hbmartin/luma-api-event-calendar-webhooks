@@ -133,19 +133,16 @@ describe('CalendarResource', () => {
         url: 'https://lu.ma/my-event',
       })
 
-      expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('url='),
-        expect.any(Object)
-      )
+      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('url='), expect.any(Object))
       expect(result.event?.name).toBe('URL Event')
     })
 
     it('should throw LumaNetworkError when fetch rejects', async () => {
       mockFetch.mockRejectedValueOnce(new Error('Connection refused'))
 
-      await expect(
-        client.calendar.lookupEvent({ event_api_id: 'evt-123' })
-      ).rejects.toThrow(LumaNetworkError)
+      await expect(client.calendar.lookupEvent({ event_api_id: 'evt-123' })).rejects.toThrow(
+        LumaNetworkError
+      )
     })
 
     it('should throw LumaApiError when response is not ok', async () => {
@@ -156,9 +153,9 @@ describe('CalendarResource', () => {
         text: async () => JSON.stringify({ message: 'Forbidden' }),
       })
 
-      await expect(
-        client.calendar.lookupEvent({ event_api_id: 'evt-123' })
-      ).rejects.toThrow(LumaApiError)
+      await expect(client.calendar.lookupEvent({ event_api_id: 'evt-123' })).rejects.toThrow(
+        LumaApiError
+      )
     })
   })
 
@@ -226,10 +223,7 @@ describe('CalendarResource', () => {
 
       const result = await client.calendar.listCoupons()
 
-      expect(mockFetch).toHaveBeenCalledWith(
-        `${BASE_URL}/v1/calendar/coupons`,
-        expect.any(Object)
-      )
+      expect(mockFetch).toHaveBeenCalledWith(`${BASE_URL}/v1/calendar/coupons`, expect.any(Object))
       expect(result.entries).toHaveLength(1)
     })
 
@@ -428,8 +422,15 @@ describe('CalendarResource', () => {
       })
 
       await expect(
-        client.calendar.importPeople({ people: [{ email: 'invalid' }] })
+        client.calendar.importPeople({ people: [{ email: 'person@example.com' }] })
       ).rejects.toThrow(LumaApiError)
+    })
+
+    it('should reject an invalid email locally before sending the request', async () => {
+      await expect(
+        client.calendar.importPeople({ people: [{ email: 'not-an-email' }] })
+      ).rejects.toThrow()
+      expect(mockFetch).not.toHaveBeenCalled()
     })
   })
 
@@ -459,9 +460,9 @@ describe('CalendarResource', () => {
     it('should throw LumaNetworkError when fetch rejects', async () => {
       mockFetch.mockRejectedValueOnce(new Error('ECONNREFUSED'))
 
-      await expect(
-        client.calendar.createPersonTag({ name: 'Test' })
-      ).rejects.toThrow(LumaNetworkError)
+      await expect(client.calendar.createPersonTag({ name: 'Test' })).rejects.toThrow(
+        LumaNetworkError
+      )
     })
 
     it('should throw LumaApiError when response is not ok', async () => {
@@ -472,9 +473,9 @@ describe('CalendarResource', () => {
         text: async () => JSON.stringify({ message: 'Tag name already exists' }),
       })
 
-      await expect(
-        client.calendar.createPersonTag({ name: 'Duplicate' })
-      ).rejects.toThrow(LumaApiError)
+      await expect(client.calendar.createPersonTag({ name: 'Duplicate' })).rejects.toThrow(
+        LumaApiError
+      )
     })
   })
 
@@ -548,9 +549,9 @@ describe('CalendarResource', () => {
     it('should throw LumaNetworkError when fetch rejects', async () => {
       mockFetch.mockRejectedValueOnce(new Error('Request failed'))
 
-      await expect(
-        client.calendar.deletePersonTag({ tag_api_id: 'tag-1' })
-      ).rejects.toThrow(LumaNetworkError)
+      await expect(client.calendar.deletePersonTag({ tag_api_id: 'tag-1' })).rejects.toThrow(
+        LumaNetworkError
+      )
     })
 
     it('should throw LumaApiError when response is not ok', async () => {
@@ -561,9 +562,9 @@ describe('CalendarResource', () => {
         text: async () => JSON.stringify({ message: 'Permission denied' }),
       })
 
-      await expect(
-        client.calendar.deletePersonTag({ tag_api_id: 'tag-1' })
-      ).rejects.toThrow(LumaApiError)
+      await expect(client.calendar.deletePersonTag({ tag_api_id: 'tag-1' })).rejects.toThrow(
+        LumaApiError
+      )
     })
   })
 
@@ -613,9 +614,9 @@ describe('CalendarResource', () => {
     it('should throw LumaNetworkError when fetch rejects', async () => {
       mockFetch.mockRejectedValueOnce(new Error('Connection timeout'))
 
-      await expect(
-        client.calendar.addEvent({ event_api_id: 'evt-123' })
-      ).rejects.toThrow(LumaNetworkError)
+      await expect(client.calendar.addEvent({ event_api_id: 'evt-123' })).rejects.toThrow(
+        LumaNetworkError
+      )
     })
 
     it('should throw LumaApiError when response is not ok', async () => {
@@ -626,9 +627,9 @@ describe('CalendarResource', () => {
         text: async () => JSON.stringify({ message: 'Event not found' }),
       })
 
-      await expect(
-        client.calendar.addEvent({ event_api_id: 'nonexistent' })
-      ).rejects.toThrow(LumaApiError)
+      await expect(client.calendar.addEvent({ event_api_id: 'nonexistent' })).rejects.toThrow(
+        LumaApiError
+      )
     })
   })
 
@@ -1198,10 +1199,7 @@ describe('WebhookResource', () => {
 
       const result = await client.webhook.list()
 
-      expect(mockFetch).toHaveBeenCalledWith(
-        `${BASE_URL}/v1/webhooks/list`,
-        expect.any(Object)
-      )
+      expect(mockFetch).toHaveBeenCalledWith(`${BASE_URL}/v1/webhooks/list`, expect.any(Object))
       expect(result.entries).toHaveLength(1)
     })
 
@@ -1507,5 +1505,43 @@ describe('MembershipResource', () => {
 
       expect(result.member.status).toBe('declined')
     })
+  })
+})
+
+describe('request validation (strings in, branded out)', () => {
+  let client: LumaClient
+
+  beforeEach(() => {
+    client = new LumaClient({ apiKey: 'test-api-key' })
+    mockFetch.mockReset()
+  })
+
+  it('accepts a plain-string id on input and forwards it', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      headers: new Headers({ 'content-type': 'application/json' }),
+      text: async () => JSON.stringify({ event: { api_id: 'evt_123', name: 'E' } }),
+    })
+
+    await client.event.get({ event_api_id: 'evt_123' })
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      `${BASE_URL}/v1/event/get?event_api_id=evt_123`,
+      expect.any(Object)
+    )
+  })
+
+  it('rejects a blank id with LumaValidationError before sending', async () => {
+    await expect(client.event.get({ event_api_id: '   ' })).rejects.toBeInstanceOf(
+      LumaValidationError
+    )
+    expect(mockFetch).not.toHaveBeenCalled()
+  })
+
+  it('rejects an invalid POST body value with LumaValidationError before sending', async () => {
+    await expect(
+      client.webhook.create({ calendar_id: 'cal_1', url: 'not-a-url', event_types: [] })
+    ).rejects.toBeInstanceOf(LumaValidationError)
+    expect(mockFetch).not.toHaveBeenCalled()
   })
 })

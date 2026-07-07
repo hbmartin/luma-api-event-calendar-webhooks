@@ -119,6 +119,19 @@ aborts are never retried. Note that with retries enabled, a POST that fails at
 the network layer may be retried after it reached the server — enable retries
 for mutating endpoints only if duplicates are acceptable or handled.
 
+Pass an `onRetry` hook to observe retries. It fires once per scheduled retry,
+after the client decides to retry and before it waits out the backoff:
+
+```ts
+const client = new LumaClient({
+  apiKey,
+  retry: {},
+  onRetry: ({ requestId, attempt, delayMs, error }) => {
+    console.warn(`retrying ${requestId} (attempt ${attempt}) in ${delayMs}ms: ${error.message}`)
+  },
+})
+```
+
 ## Cancellation
 
 Every resource method accepts an optional `{ signal }` as its last argument.
@@ -168,8 +181,10 @@ const client = new LumaClient({
 
 The debug hook is called after each request completes with:
 
+- `requestId`: Stable id for the logical request, shared across retry attempts
+- `attempt`: Zero-based attempt index (0 is the initial try, 1+ are retries)
 - `request`: Method, URL, headers, and body (for POST/PUT/PATCH)
-- `outcome`: Either `{ type: 'success', response }` with status/headers/body, or `{ type: 'error', error }` for network failures
+- `outcome`: One of `{ type: 'success', response }`, `{ type: 'http-error', response }` (non-2xx status), or `{ type: 'network-error', error }` (network/timeout failures)
 - `durationMs`: Request duration in milliseconds
 
 ## Resources
@@ -203,6 +218,31 @@ All methods are thin wrappers around the Luma REST endpoints. Request/response t
   - `createUploadUrl`
 
 For full request/response shapes, use the exported schemas and types.
+
+## Input Validation and IDs
+
+Every request's params and body are validated with Zod before the network call,
+so bad input fails fast with a `LumaValidationError` rather than a wasted round
+trip. Resource ids are accepted as plain strings on input and returned as
+branded types on output, so an `EventApiId` can't be passed where a `CalendarId`
+is expected:
+
+```ts
+import { LumaClient, LumaValidationError } from 'luma-api-event-calendar-webhooks'
+
+const client = new LumaClient({ apiKey: process.env.LUMA_API_KEY! })
+
+// Plain string in; validated and narrowed internally.
+const { event } = await client.event.get({ event_api_id: 'evt-123' })
+
+try {
+  await client.event.get({ event_api_id: '' }) // blank id
+} catch (error) {
+  if (error instanceof LumaValidationError) {
+    console.error('invalid request:', error.issues)
+  }
+}
+```
 
 ## Using Types and Schemas
 
@@ -420,7 +460,7 @@ try {
   } else if (error instanceof LumaAuthenticationError) {
     console.error('Invalid API key')
   } else if (error instanceof LumaValidationError) {
-    console.error('Response schema mismatch:', error.issues)
+    console.error('Request or response schema mismatch:', error.issues)
   } else {
     throw error
   }

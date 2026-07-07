@@ -2,6 +2,7 @@ import type { PerRequestOptions } from '../fetcher.js'
 import { Resource } from './base.js'
 import {
   type LookupEntityParams,
+  LookupEntityParamsSchema,
   LookupEntityResponseSchema,
   type LookupEntityResponse,
 } from '../../schemas/index.js'
@@ -15,9 +16,10 @@ export class EntityResource extends Resource {
     params: LookupEntityParams,
     options?: PerRequestOptions
   ): Promise<LookupEntityResponse> {
-    return this.fetcher.get(
+    return this.getValidated(
       '/v1/entity/lookup',
-      { slug: params.slug },
+      params,
+      LookupEntityParamsSchema,
       LookupEntityResponseSchema,
       options
     )

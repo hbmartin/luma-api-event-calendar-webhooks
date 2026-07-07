@@ -24,9 +24,11 @@ export const MembershipTierSchema = z.object({
 export interface MembershipTier extends z.infer<typeof MembershipTierSchema> {}
 
 // List membership tiers params
-export const ListMembershipTiersParamsSchema = PaginationParamsSchema
+export const ListMembershipTiersParamsSchema = PaginationParamsSchema.extend({
+  calendar_api_id: LumaId.CalendarIdSchema.optional(),
+})
 
-export interface ListMembershipTiersParams extends z.infer<
+export interface ListMembershipTiersParams extends z.input<
   typeof ListMembershipTiersParamsSchema
 > {}
 
@@ -60,7 +62,7 @@ export const AddMemberToTierRequestSchema = z.object({
   name: z.string().optional(),
 })
 
-export interface AddMemberToTierRequest extends z.infer<typeof AddMemberToTierRequestSchema> {}
+export interface AddMemberToTierRequest extends z.input<typeof AddMemberToTierRequestSchema> {}
 
 // Add member to tier response
 export const AddMemberToTierResponseSchema = z.object({
@@ -91,7 +93,7 @@ export const UpdateMemberStatusRequestSchema = z.union([
   UpdateMemberStatusByEmailSchema,
 ])
 
-export type UpdateMemberStatusRequest = z.infer<typeof UpdateMemberStatusRequestSchema>
+export type UpdateMemberStatusRequest = z.input<typeof UpdateMemberStatusRequestSchema>
 
 // Update member status response
 export const UpdateMemberStatusResponseSchema = z.object({

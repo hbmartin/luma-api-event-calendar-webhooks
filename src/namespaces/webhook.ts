@@ -6,7 +6,7 @@
 export { WebhookResource } from '../client/resources/webhook.js'
 
 // Re-export utility functions
-export { parseWebhookPayload } from '../schemas/webhook.js'
+export { parseWebhookPayload, parseWebhookPayloadFromRawBody } from '../schemas/webhook.js'
 
 // Re-export signature verification helpers
 export {

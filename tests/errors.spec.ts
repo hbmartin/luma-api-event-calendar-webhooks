@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { ZodError } from "zod";
+import { describe, expect, it } from 'vitest'
+import { ZodError } from 'zod'
 import {
   LumaError,
   LumaValidationError,
@@ -10,329 +10,333 @@ import {
   LumaNotFoundError,
   LumaWebhookConfigurationError,
   LumaWebhookSignatureError,
-} from "../src/errors.js";
+} from '../src/errors.js'
 
-describe("LumaError", () => {
-  it("should create base error with message", () => {
-    const error = new LumaError("Test error");
-    expect(error.message).toBe("Test error");
-    expect(error.name).toBe("LumaError");
-    expect(error instanceof Error).toBe(true);
-  });
-});
+describe('LumaError', () => {
+  it('should create base error with message', () => {
+    const error = new LumaError('Test error')
+    expect(error.message).toBe('Test error')
+    expect(error.name).toBe('LumaError')
+    expect(error instanceof Error).toBe(true)
+  })
+})
 
-describe("LumaValidationError", () => {
-  it("should create validation error from ZodError", () => {
+describe('LumaValidationError', () => {
+  it('should create validation error from ZodError', () => {
     const zodError = new ZodError([
       {
-        code: "invalid_type",
-        expected: "string",
-        received: "number",
-        path: ["field"],
-        message: "Expected string, received number",
+        code: 'invalid_type',
+        expected: 'string',
+        received: 'number',
+        path: ['field'],
+        message: 'Expected string, received number',
       },
-    ]);
+    ])
 
-    const error = new LumaValidationError(zodError);
-    expect(error.name).toBe("LumaValidationError");
-    expect(error.issues).toEqual(zodError.issues);
-    expect(error.message).toContain("Validation failed");
-    expect(error instanceof LumaError).toBe(true);
-  });
+    const error = new LumaValidationError(zodError)
+    expect(error.name).toBe('LumaValidationError')
+    expect(error.issues).toEqual(zodError.issues)
+    expect(error.message).toContain('Validation failed')
+    expect(error instanceof LumaError).toBe(true)
+  })
 
-  it("should include field path in message", () => {
+  it('should include field path in message', () => {
     const zodError = new ZodError([
       {
-        code: "invalid_type",
-        expected: "string",
-        received: "undefined",
-        path: ["user", "email"],
-        message: "Required",
+        code: 'invalid_type',
+        expected: 'string',
+        received: 'undefined',
+        path: ['user', 'email'],
+        message: 'Required',
       },
-    ]);
+    ])
 
-    const error = new LumaValidationError(zodError);
-    expect(error.message).toContain("user.email");
-  });
-});
+    const error = new LumaValidationError(zodError)
+    expect(error.message).toContain('user.email')
+  })
+})
 
-describe("LumaApiError", () => {
-  it("should create API error with status code", () => {
-    const error = new LumaApiError("Bad request", 400);
-    expect(error.message).toBe("Bad request");
-    expect(error.statusCode).toBe(400);
-    expect(error.name).toBe("LumaApiError");
-    expect(error instanceof LumaError).toBe(true);
-  });
+describe('LumaApiError', () => {
+  it('should create API error with status code', () => {
+    const error = new LumaApiError('Bad request', 400)
+    expect(error.message).toBe('Bad request')
+    expect(error.statusCode).toBe(400)
+    expect(error.name).toBe('LumaApiError')
+    expect(error instanceof LumaError).toBe(true)
+  })
 
-  it("should include response data", () => {
-    const responseData = { error: "Invalid input", details: { field: "name" } };
-    const error = new LumaApiError("Bad request", 400, responseData);
-    expect(error.response).toEqual(responseData);
-  });
+  it('should include response data', () => {
+    const responseData = { error: 'Invalid input', details: { field: 'name' } }
+    const error = new LumaApiError('Bad request', 400, responseData)
+    expect(error.response).toEqual(responseData)
+  })
 
-  it("should handle undefined response data", () => {
-    const error = new LumaApiError("Server error", 500);
-    expect(error.response).toBeUndefined();
-  });
-});
+  it('should handle undefined response data', () => {
+    const error = new LumaApiError('Server error', 500)
+    expect(error.response).toBeUndefined()
+  })
+})
 
-describe("LumaNetworkError", () => {
-  it("should create network error with message", () => {
-    const error = new LumaNetworkError("Connection refused");
-    expect(error.message).toBe("Connection refused");
-    expect(error.name).toBe("LumaNetworkError");
-    expect(error instanceof LumaError).toBe(true);
-  });
+describe('LumaNetworkError', () => {
+  it('should create network error with message', () => {
+    const error = new LumaNetworkError('Connection refused')
+    expect(error.message).toBe('Connection refused')
+    expect(error.name).toBe('LumaNetworkError')
+    expect(error instanceof LumaError).toBe(true)
+  })
 
-  it("should include original error cause", () => {
-    const originalError = new Error("ECONNREFUSED");
-    const error = new LumaNetworkError("Connection refused", originalError);
-    expect(error.cause).toBe(originalError);
-  });
-});
+  it('should include original error cause', () => {
+    const originalError = new Error('ECONNREFUSED')
+    const error = new LumaNetworkError('Connection refused', originalError)
+    expect(error.cause).toBe(originalError)
+  })
+})
 
-describe("LumaRateLimitError", () => {
-  it("should create rate limit error", () => {
-    const error = new LumaRateLimitError("Rate limit exceeded");
-    expect(error.message).toBe("Rate limit exceeded");
-    expect(error.name).toBe("LumaRateLimitError");
-    expect(error.statusCode).toBe(429);
-    expect(error instanceof LumaApiError).toBe(true);
-  });
+describe('LumaRateLimitError', () => {
+  it('should create rate limit error', () => {
+    const error = new LumaRateLimitError('Rate limit exceeded')
+    expect(error.message).toBe('Rate limit exceeded')
+    expect(error.name).toBe('LumaRateLimitError')
+    expect(error.statusCode).toBe(429)
+    expect(error instanceof LumaApiError).toBe(true)
+  })
 
-  it("should include retry-after value", () => {
-    const error = new LumaRateLimitError("Rate limit exceeded", 60);
-    expect(error.retryAfter).toBe(60);
-  });
+  it('should include retry-after value', () => {
+    const error = new LumaRateLimitError('Rate limit exceeded', 60)
+    expect(error.retryAfter).toBe(60)
+  })
 
-  it("should handle undefined retry-after", () => {
-    const error = new LumaRateLimitError("Rate limit exceeded");
-    expect(error.retryAfter).toBeUndefined();
-  });
+  it('should handle undefined retry-after', () => {
+    const error = new LumaRateLimitError('Rate limit exceeded')
+    expect(error.retryAfter).toBeUndefined()
+  })
 
-  it("should include response data", () => {
-    const responseData = { message: "Too many requests" };
-    const error = new LumaRateLimitError("Rate limit exceeded", 30, responseData);
-    expect(error.response).toEqual(responseData);
-    expect(error.retryAfter).toBe(30);
-  });
-});
+  it('should include response data', () => {
+    const responseData = { message: 'Too many requests' }
+    const error = new LumaRateLimitError('Rate limit exceeded', 30, responseData)
+    expect(error.response).toEqual(responseData)
+    expect(error.retryAfter).toBe(30)
+  })
+})
 
-describe("LumaAuthenticationError", () => {
-  it("should create authentication error", () => {
-    const error = new LumaAuthenticationError("Invalid API key");
-    expect(error.message).toBe("Invalid API key");
-    expect(error.name).toBe("LumaAuthenticationError");
-    expect(error.statusCode).toBe(401);
-    expect(error instanceof LumaApiError).toBe(true);
-  });
+describe('LumaAuthenticationError', () => {
+  it('should create authentication error', () => {
+    const error = new LumaAuthenticationError('Invalid API key')
+    expect(error.message).toBe('Invalid API key')
+    expect(error.name).toBe('LumaAuthenticationError')
+    expect(error.statusCode).toBe(401)
+    expect(error instanceof LumaApiError).toBe(true)
+  })
 
-  it("should include response data", () => {
-    const responseData = { error: "Unauthorized" };
-    const error = new LumaAuthenticationError("Invalid API key", responseData);
-    expect(error.response).toEqual(responseData);
-  });
-});
+  it('should include response data', () => {
+    const responseData = { error: 'Unauthorized' }
+    const error = new LumaAuthenticationError('Invalid API key', responseData)
+    expect(error.response).toEqual(responseData)
+  })
+})
 
-describe("LumaNotFoundError", () => {
-  it("should create not found error", () => {
-    const error = new LumaNotFoundError("Event not found");
-    expect(error.message).toBe("Event not found");
-    expect(error.name).toBe("LumaNotFoundError");
-    expect(error.statusCode).toBe(404);
-    expect(error instanceof LumaApiError).toBe(true);
-  });
+describe('LumaNotFoundError', () => {
+  it('should create not found error', () => {
+    const error = new LumaNotFoundError('Event not found')
+    expect(error.message).toBe('Event not found')
+    expect(error.name).toBe('LumaNotFoundError')
+    expect(error.statusCode).toBe(404)
+    expect(error instanceof LumaApiError).toBe(true)
+  })
 
-  it("should include response data", () => {
-    const responseData = { error: "Resource not found" };
-    const error = new LumaNotFoundError("Event not found", responseData);
-    expect(error.response).toEqual(responseData);
-  });
-});
+  it('should include response data', () => {
+    const responseData = { error: 'Resource not found' }
+    const error = new LumaNotFoundError('Event not found', responseData)
+    expect(error.response).toEqual(responseData)
+  })
+})
 
-describe("LumaWebhookSignatureError", () => {
-  it("should create a webhook signature error with a verification reason", () => {
-    const error = new LumaWebhookSignatureError("signature-mismatch");
+describe('LumaWebhookSignatureError', () => {
+  it('should create a webhook signature error with a verification reason', () => {
+    const error = new LumaWebhookSignatureError('signature-mismatch')
 
-    expect(error.message).toBe("Webhook signature verification failed: signature-mismatch");
-    expect(error.name).toBe("LumaWebhookSignatureError");
-    expect(error.code).toBe("WEBHOOK_SIGNATURE_ERROR");
-    expect(error.reason).toBe("signature-mismatch");
-    expect(error instanceof LumaError).toBe(true);
-  });
-});
+    expect(error.message).toBe('Webhook signature verification failed: signature-mismatch')
+    expect(error.name).toBe('LumaWebhookSignatureError')
+    expect(error.code).toBe('WEBHOOK_SIGNATURE_ERROR')
+    expect(error.reason).toBe('signature-mismatch')
+    expect(error instanceof LumaError).toBe(true)
+  })
+})
 
-describe("LumaWebhookConfigurationError", () => {
-  it("should create a webhook configuration error with a configuration reason", () => {
-    const error = new LumaWebhookConfigurationError("missing-secret");
+describe('LumaWebhookConfigurationError', () => {
+  it('should create a webhook configuration error with a configuration reason', () => {
+    const error = new LumaWebhookConfigurationError('missing-secret')
 
-    expect(error.message).toBe("Webhook configuration is invalid: missing-secret");
-    expect(error.name).toBe("LumaWebhookConfigurationError");
-    expect(error.code).toBe("WEBHOOK_CONFIGURATION_ERROR");
-    expect(error.reason).toBe("missing-secret");
-    expect(error instanceof LumaError).toBe(true);
-  });
-});
+    expect(error.message).toBe('Webhook configuration is invalid: missing-secret')
+    expect(error.name).toBe('LumaWebhookConfigurationError')
+    expect(error.code).toBe('WEBHOOK_CONFIGURATION_ERROR')
+    expect(error.reason).toBe('missing-secret')
+    expect(error instanceof LumaError).toBe(true)
+  })
+})
 
-describe("requestId tracking", () => {
-  it("LumaError should include requestId when provided", () => {
-    const error = new LumaError("Test error", 500, "ERROR", { requestId: "req-123" });
-    expect(error.requestId).toBe("req-123");
-  });
+describe('requestId tracking', () => {
+  it('LumaError should include requestId when provided', () => {
+    const error = new LumaError('Test error', 500, 'ERROR', { requestId: 'req-123' })
+    expect(error.requestId).toBe('req-123')
+  })
 
-  it("LumaError should have undefined requestId when not provided", () => {
-    const error = new LumaError("Test error");
-    expect(error.requestId).toBeUndefined();
-  });
+  it('LumaError should have undefined requestId when not provided', () => {
+    const error = new LumaError('Test error')
+    expect(error.requestId).toBeUndefined()
+  })
 
-  it("LumaValidationError should include requestId when provided", () => {
-    const zodError = new ZodError([{
-      code: "invalid_type",
-      expected: "string",
-      received: "number",
-      path: ["field"],
-      message: "Expected string",
-    }]);
-    const error = new LumaValidationError(zodError, "req-validation");
-    expect(error.requestId).toBe("req-validation");
-  });
+  it('LumaValidationError should include requestId when provided', () => {
+    const zodError = new ZodError([
+      {
+        code: 'invalid_type',
+        expected: 'string',
+        received: 'number',
+        path: ['field'],
+        message: 'Expected string',
+      },
+    ])
+    const error = new LumaValidationError(zodError, 'req-validation')
+    expect(error.requestId).toBe('req-validation')
+  })
 
-  it("LumaValidationError should have undefined requestId when not provided", () => {
-    const zodError = new ZodError([{
-      code: "invalid_type",
-      expected: "string",
-      received: "number",
-      path: ["field"],
-      message: "Expected string",
-    }]);
-    const error = new LumaValidationError(zodError);
-    expect(error.requestId).toBeUndefined();
-  });
+  it('LumaValidationError should have undefined requestId when not provided', () => {
+    const zodError = new ZodError([
+      {
+        code: 'invalid_type',
+        expected: 'string',
+        received: 'number',
+        path: ['field'],
+        message: 'Expected string',
+      },
+    ])
+    const error = new LumaValidationError(zodError)
+    expect(error.requestId).toBeUndefined()
+  })
 
-  it("LumaApiError should include requestId when provided", () => {
-    const error = new LumaApiError("Bad request", 400, undefined, "req-api");
-    expect(error.requestId).toBe("req-api");
-  });
+  it('LumaApiError should include requestId when provided', () => {
+    const error = new LumaApiError('Bad request', 400, undefined, 'req-api')
+    expect(error.requestId).toBe('req-api')
+  })
 
-  it("LumaApiError should have undefined requestId when not provided", () => {
-    const error = new LumaApiError("Bad request", 400);
-    expect(error.requestId).toBeUndefined();
-  });
+  it('LumaApiError should have undefined requestId when not provided', () => {
+    const error = new LumaApiError('Bad request', 400)
+    expect(error.requestId).toBeUndefined()
+  })
 
-  it("LumaNetworkError should include requestId when provided", () => {
-    const error = new LumaNetworkError("Connection failed", undefined, "req-network");
-    expect(error.requestId).toBe("req-network");
-  });
+  it('LumaNetworkError should include requestId when provided', () => {
+    const error = new LumaNetworkError('Connection failed', undefined, 'req-network')
+    expect(error.requestId).toBe('req-network')
+  })
 
-  it("LumaNetworkError should have undefined requestId when not provided", () => {
-    const error = new LumaNetworkError("Connection failed");
-    expect(error.requestId).toBeUndefined();
-  });
+  it('LumaNetworkError should have undefined requestId when not provided', () => {
+    const error = new LumaNetworkError('Connection failed')
+    expect(error.requestId).toBeUndefined()
+  })
 
-  it("LumaRateLimitError should propagate requestId", () => {
-    const error = new LumaRateLimitError("Rate limited", 60, undefined, "req-rate");
-    expect(error.requestId).toBe("req-rate");
-  });
+  it('LumaRateLimitError should propagate requestId', () => {
+    const error = new LumaRateLimitError('Rate limited', 60, undefined, 'req-rate')
+    expect(error.requestId).toBe('req-rate')
+  })
 
-  it("LumaRateLimitError should have undefined requestId when not provided", () => {
-    const error = new LumaRateLimitError("Rate limited", 60);
-    expect(error.requestId).toBeUndefined();
-  });
+  it('LumaRateLimitError should have undefined requestId when not provided', () => {
+    const error = new LumaRateLimitError('Rate limited', 60)
+    expect(error.requestId).toBeUndefined()
+  })
 
-  it("LumaAuthenticationError should propagate requestId", () => {
-    const error = new LumaAuthenticationError("Invalid key", undefined, "req-auth");
-    expect(error.requestId).toBe("req-auth");
-  });
+  it('LumaAuthenticationError should propagate requestId', () => {
+    const error = new LumaAuthenticationError('Invalid key', undefined, 'req-auth')
+    expect(error.requestId).toBe('req-auth')
+  })
 
-  it("LumaAuthenticationError should have undefined requestId when not provided", () => {
-    const error = new LumaAuthenticationError("Invalid key");
-    expect(error.requestId).toBeUndefined();
-  });
+  it('LumaAuthenticationError should have undefined requestId when not provided', () => {
+    const error = new LumaAuthenticationError('Invalid key')
+    expect(error.requestId).toBeUndefined()
+  })
 
-  it("LumaNotFoundError should propagate requestId", () => {
-    const error = new LumaNotFoundError("Not found", undefined, "req-notfound");
-    expect(error.requestId).toBe("req-notfound");
-  });
+  it('LumaNotFoundError should propagate requestId', () => {
+    const error = new LumaNotFoundError('Not found', undefined, 'req-notfound')
+    expect(error.requestId).toBe('req-notfound')
+  })
 
-  it("LumaNotFoundError should have undefined requestId when not provided", () => {
-    const error = new LumaNotFoundError("Not found");
-    expect(error.requestId).toBeUndefined();
-  });
-});
+  it('LumaNotFoundError should have undefined requestId when not provided', () => {
+    const error = new LumaNotFoundError('Not found')
+    expect(error.requestId).toBeUndefined()
+  })
+})
 
-describe("Error hierarchy", () => {
-  it("should maintain proper inheritance chain", () => {
+describe('Error hierarchy', () => {
+  it('should maintain proper inheritance chain', () => {
     const validationError = new LumaValidationError(
       new ZodError([
         {
-          code: "invalid_type",
-          expected: "string",
-          received: "number",
+          code: 'invalid_type',
+          expected: 'string',
+          received: 'number',
           path: [],
-          message: "test",
+          message: 'test',
         },
       ])
-    );
-    const apiError = new LumaApiError("test", 400);
-    const networkError = new LumaNetworkError("test");
-    const rateLimitError = new LumaRateLimitError("test");
-    const authError = new LumaAuthenticationError("test");
-    const notFoundError = new LumaNotFoundError("test");
+    )
+    const apiError = new LumaApiError('test', 400)
+    const networkError = new LumaNetworkError('test')
+    const rateLimitError = new LumaRateLimitError('test')
+    const authError = new LumaAuthenticationError('test')
+    const notFoundError = new LumaNotFoundError('test')
 
     // All should be instances of Error
-    expect(validationError instanceof Error).toBe(true);
-    expect(apiError instanceof Error).toBe(true);
-    expect(networkError instanceof Error).toBe(true);
-    expect(rateLimitError instanceof Error).toBe(true);
-    expect(authError instanceof Error).toBe(true);
-    expect(notFoundError instanceof Error).toBe(true);
+    expect(validationError instanceof Error).toBe(true)
+    expect(apiError instanceof Error).toBe(true)
+    expect(networkError instanceof Error).toBe(true)
+    expect(rateLimitError instanceof Error).toBe(true)
+    expect(authError instanceof Error).toBe(true)
+    expect(notFoundError instanceof Error).toBe(true)
 
     // All should be instances of LumaError
-    expect(validationError instanceof LumaError).toBe(true);
-    expect(apiError instanceof LumaError).toBe(true);
-    expect(networkError instanceof LumaError).toBe(true);
-    expect(rateLimitError instanceof LumaError).toBe(true);
-    expect(authError instanceof LumaError).toBe(true);
-    expect(notFoundError instanceof LumaError).toBe(true);
+    expect(validationError instanceof LumaError).toBe(true)
+    expect(apiError instanceof LumaError).toBe(true)
+    expect(networkError instanceof LumaError).toBe(true)
+    expect(rateLimitError instanceof LumaError).toBe(true)
+    expect(authError instanceof LumaError).toBe(true)
+    expect(notFoundError instanceof LumaError).toBe(true)
 
     // Specific inheritance
-    expect(rateLimitError instanceof LumaApiError).toBe(true);
-    expect(authError instanceof LumaApiError).toBe(true);
-    expect(notFoundError instanceof LumaApiError).toBe(true);
-  });
+    expect(rateLimitError instanceof LumaApiError).toBe(true)
+    expect(authError instanceof LumaApiError).toBe(true)
+    expect(notFoundError instanceof LumaApiError).toBe(true)
+  })
 
-  it("should be catchable by type", () => {
+  it('should be catchable by type', () => {
     const errors = [
       new LumaValidationError(
         new ZodError([
           {
-            code: "invalid_type",
-            expected: "string",
-            received: "number",
+            code: 'invalid_type',
+            expected: 'string',
+            received: 'number',
             path: [],
-            message: "test",
+            message: 'test',
           },
         ])
       ),
-      new LumaApiError("test", 400),
-      new LumaNetworkError("test"),
-      new LumaRateLimitError("test"),
-      new LumaAuthenticationError("test"),
-      new LumaNotFoundError("test"),
-    ];
+      new LumaApiError('test', 400),
+      new LumaNetworkError('test'),
+      new LumaRateLimitError('test'),
+      new LumaAuthenticationError('test'),
+      new LumaNotFoundError('test'),
+    ]
 
-    let caughtCount = 0;
+    let caughtCount = 0
     for (const error of errors) {
       try {
-        throw error;
+        throw error
       } catch (e) {
         if (e instanceof LumaError) {
-          caughtCount++;
+          caughtCount++
         }
       }
     }
 
-    expect(caughtCount).toBe(6);
-  });
-});
+    expect(caughtCount).toBe(6)
+  })
+})

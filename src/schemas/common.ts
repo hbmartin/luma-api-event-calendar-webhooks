@@ -6,7 +6,7 @@ export const PaginationParamsSchema = z.object({
   limit: z.number().int().positive().max(100).optional(),
 })
 
-export interface PaginationParams extends z.infer<typeof PaginationParamsSchema> {}
+export interface PaginationParams extends z.input<typeof PaginationParamsSchema> {}
 
 export const Pagination = {
   ParamsSchema: PaginationParamsSchema,

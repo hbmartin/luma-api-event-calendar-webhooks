@@ -58,6 +58,8 @@ export type DebugOutcome = DebugSuccessOutcome | DebugHttpErrorOutcome | DebugNe
 
 export interface DebugContext {
   requestId: string
+  /** Zero-based index of this attempt. 0 is the initial try; 1+ are retries. */
+  attempt: number
   request: DebugRequest
   outcome: DebugOutcome
   durationMs: number
@@ -65,9 +67,28 @@ export interface DebugContext {
 
 export type DebugHook = (context: DebugContext) => void | Promise<void>
 
+/** Context passed to the retry hook before each backoff wait. */
+export interface RetryContext {
+  requestId: string
+  request: DebugRequest
+  /** Zero-based index of the attempt that just failed and is being retried. */
+  attempt: number
+  /** Delay in milliseconds the client will wait before the next attempt. */
+  delayMs: number
+  /** The (retryable) error that triggered this retry. */
+  error: LumaError
+}
+
+/**
+ * Called once per scheduled retry, after the client decides to retry and
+ * before it waits out the backoff. Useful for logging or metrics on how often
+ * requests are being retried and how long the client is backing off.
+ */
+export type RetryHook = (context: RetryContext) => void | Promise<void>
+
 /**
  * Minimal fetch signature the client relies on. Compatible with the global
- * fetch in Node.js >= 18, Deno, Bun, browsers, and edge runtimes.
+ * fetch in Node.js >= 22, Deno, Bun, browsers, and edge runtimes.
  */
 export type FetchImplementation = (input: string | URL, init?: RequestInit) => Promise<Response>
 
@@ -83,6 +104,8 @@ export interface FetcherOptions {
   fetch?: FetchImplementation
   /** Opt-in retry policy. Requests are never retried when omitted. */
   retry?: RetryOptions
+  /** Invoked before each retry backoff, for logging/metrics on retries. */
+  onRetry?: RetryHook
 }
 
 export interface RequestOptions {
@@ -113,6 +136,7 @@ export interface FetcherConfig {
   debug?: DebugHook
   fetchImplementation: FetchImplementation
   retry?: RetryConfig
+  onRetry?: RetryHook
 }
 
 interface ErrorPayload {
@@ -442,6 +466,7 @@ const buildDebugRequest = ({
 
 interface DebugResponseContextParams {
   requestId: string
+  attempt: number
   request: DebugRequest
   response: Response
   data: unknown
@@ -450,12 +475,14 @@ interface DebugResponseContextParams {
 
 const buildDebugResponseContext = ({
   requestId,
+  attempt,
   request,
   response,
   data,
   durationMs,
 }: DebugResponseContextParams): DebugContext => ({
   requestId,
+  attempt,
   request,
   outcome: response.ok
     ? {
@@ -481,6 +508,7 @@ const buildDebugResponseContext = ({
 
 interface DebugNetworkErrorContextParams {
   requestId: string
+  attempt: number
   request: DebugRequest
   error: LumaNetworkError
   durationMs: number
@@ -488,11 +516,13 @@ interface DebugNetworkErrorContextParams {
 
 const buildDebugNetworkErrorContext = ({
   requestId,
+  attempt,
   request,
   error,
   durationMs,
 }: DebugNetworkErrorContextParams): DebugContext => ({
   requestId,
+  attempt,
   request,
   outcome: {
     type: 'network-error',
@@ -523,8 +553,31 @@ const safelyInvokeDebug = async (
   await invokeDebugHook(debugHandler, context)
 }
 
+const logRetryHookError = (error: unknown): void => {
+  console.error('Luma retry hook error', error)
+}
+
+const noOpRetryHook: RetryHook = () => undefined
+
+const invokeRetryHook = async (onRetry: RetryHook, context: RetryContext): Promise<void> => {
+  try {
+    await Promise.resolve(onRetry(context))
+  } catch (error) {
+    logRetryHookError(error)
+  }
+}
+
+const safelyInvokeRetry = async (
+  onRetry: RetryHook | undefined,
+  context: RetryContext
+): Promise<void> => {
+  const retryHandler = onRetry ?? noOpRetryHook
+  await invokeRetryHook(retryHandler, context)
+}
+
 interface ExecuteRequestParams<T> {
   requestId: string
+  attempt: number
   url: string
   init: RequestInit
   timeoutMs: number
@@ -538,6 +591,7 @@ interface ExecuteRequestParams<T> {
 
 const executeRequest = async <T>({
   requestId,
+  attempt,
   url,
   init,
   timeoutMs,
@@ -556,6 +610,7 @@ const executeRequest = async <T>({
       debug,
       buildDebugResponseContext({
         requestId,
+        attempt,
         request: debugRequest,
         response,
         data,
@@ -572,6 +627,7 @@ const executeRequest = async <T>({
 
 interface HandleRequestErrorParams {
   requestId: string
+  attempt: number
   error: unknown
   timeoutMs: number
   debugRequest: DebugRequest
@@ -582,6 +638,7 @@ interface HandleRequestErrorParams {
 
 const handleRequestError = async ({
   requestId,
+  attempt,
   error,
   timeoutMs,
   debugRequest,
@@ -598,6 +655,7 @@ const handleRequestError = async ({
       debug,
       buildDebugNetworkErrorContext({
         requestId,
+        attempt,
         request: debugRequest,
         error: mappedError,
         durationMs: Date.now() - startTimeMs,
@@ -611,6 +669,18 @@ const handleRequestError = async ({
 const defaultFetchImplementation: FetchImplementation = (input, init) =>
   globalThis.fetch(input, init)
 
+/**
+ * Everything derived once per logical request and reused across retry
+ * attempts, so the request id and debug request stay stable while retrying.
+ */
+interface PreparedRequest {
+  requestId: string
+  url: string
+  init: RequestInit
+  debugRequest: DebugRequest
+  signal?: AbortSignal
+}
+
 export function createFetcher(options: FetcherOptions) {
   const config: FetcherConfig = {
     apiKey: options.apiKey,
@@ -619,26 +689,36 @@ export function createFetcher(options: FetcherOptions) {
     debug: options.debug,
     fetchImplementation: options.fetch ?? defaultFetchImplementation,
     retry: options.retry === undefined ? undefined : resolveRetryConfig(options.retry),
+    onRetry: options.onRetry,
   }
 
-  async function attemptRequest<T>(requestOptions: RequestOptions, schema: ZodType<T>): Promise<T> {
-    const requestId = globalThis.crypto.randomUUID()
+  function prepareRequest(requestOptions: RequestOptions): PreparedRequest {
     const { method, path, query, body, signal } = requestOptions
     const url = buildUrl(config.baseUrl, path, query)
     const init = buildRequestInit(config.apiKey, { method, body })
+    const debugRequest = buildDebugRequest({ method, url, headers: init.headers, body })
 
-    const debugRequest = buildDebugRequest({
-      method,
+    return {
+      requestId: globalThis.crypto.randomUUID(),
       url,
-      headers: init.headers,
-      body,
-    })
+      init,
+      debugRequest,
+      signal,
+    }
+  }
 
+  async function attemptRequest<T>(
+    prepared: PreparedRequest,
+    attempt: number,
+    schema: ZodType<T>
+  ): Promise<T> {
+    const { requestId, url, init, debugRequest, signal } = prepared
     const startTimeMs = Date.now()
 
     try {
       return await executeRequest({
         requestId,
+        attempt,
         url,
         init,
         timeoutMs: config.timeout,
@@ -652,6 +732,7 @@ export function createFetcher(options: FetcherOptions) {
     } catch (error: unknown) {
       return await handleRequestError({
         requestId,
+        attempt,
         error,
         timeoutMs: config.timeout,
         debugRequest,
@@ -665,35 +746,65 @@ export function createFetcher(options: FetcherOptions) {
   interface WaitBeforeRetryParams {
     error: unknown
     attempt: number
-    signal?: AbortSignal
+    prepared: PreparedRequest
+  }
+
+  interface BackoffParams {
+    prepared: PreparedRequest
+    attempt: number
+    delayMs: number
+    error: LumaError
+  }
+
+  /** Notifies the retry hook, then waits out the backoff before the next attempt. */
+  async function backoffBeforeRetry({
+    prepared,
+    attempt,
+    delayMs,
+    error,
+  }: BackoffParams): Promise<void> {
+    await safelyInvokeRetry(config.onRetry, {
+      requestId: prepared.requestId,
+      request: prepared.debugRequest,
+      attempt,
+      delayMs,
+      error,
+    })
+    await waitBeforeRetry(delayMs, prepared.signal)
   }
 
   /** Waits out the backoff for a retryable failure, or rethrows the error. */
   async function waitBeforeRetryOrRethrow({
     error,
     attempt,
-    signal,
+    prepared,
   }: WaitBeforeRetryParams): Promise<void> {
     const delayMs =
       config.retry === undefined
         ? undefined
         : computeRetryDelayMs({ error, attempt, config: config.retry })
 
-    if (delayMs === undefined) {
+    // A computed delay implies isRetryableError(error), which is always a
+    // LumaError; the instanceof narrows the type for the retry hook.
+    if (delayMs === undefined || !(error instanceof LumaError)) {
       throw error
     }
 
-    await waitBeforeRetry(delayMs, signal)
+    await backoffBeforeRetry({ prepared, attempt, delayMs, error })
+  }
+
+  async function runWithRetries<T>(prepared: PreparedRequest, schema: ZodType<T>): Promise<T> {
+    for (let attempt = 0; ; attempt += 1) {
+      try {
+        return await attemptRequest(prepared, attempt, schema)
+      } catch (error: unknown) {
+        await waitBeforeRetryOrRethrow({ error, attempt, prepared })
+      }
+    }
   }
 
   async function request<T>(requestOptions: RequestOptions, schema: ZodType<T>): Promise<T> {
-    for (let attempt = 0; ; attempt += 1) {
-      try {
-        return await attemptRequest(requestOptions, schema)
-      } catch (error: unknown) {
-        await waitBeforeRetryOrRethrow({ error, attempt, signal: requestOptions.signal })
-      }
-    }
+    return runWithRetries(prepareRequest(requestOptions), schema)
   }
 
   async function get<T>(

@@ -11,7 +11,7 @@ import type {
 } from '../schemas/webhook.js'
 import { verifyWebhookSignature } from './signature.js'
 import { LumaWebhookConfigurationError, LumaWebhookSignatureError } from '../errors.js'
-import { parseWebhookPayload } from '../schemas/webhook.js'
+import { parseWebhookPayload, parseWebhookPayloadFromRawBody } from '../schemas/webhook.js'
 
 export type WebhookCallback<Payload> = (payload: Payload) => void | Promise<void>
 
@@ -145,11 +145,13 @@ export function createWebhookHandler(options: CreateWebhookHandlerOptions): Webh
 export function createWebhookHandler(
   options: CreateWebhookHandlerOptions
 ): VerifyingWebhookHandler {
-  const handle = async (payload: unknown): Promise<WebhookPayload> => {
-    const parsed = parseWebhookPayload(payload)
+  const dispatch = async (parsed: WebhookPayload): Promise<WebhookPayload> => {
     await dispatchPayload(options, parsed)
     return parsed
   }
+
+  const handle = async (payload: unknown): Promise<WebhookPayload> =>
+    dispatch(parseWebhookPayload(payload))
 
   const handleRequest = async ({
     body,
@@ -162,7 +164,7 @@ export function createWebhookHandler(
       toleranceInSeconds: options.toleranceInSeconds,
     })
 
-    return handle(JSON.parse(body))
+    return dispatch(parseWebhookPayloadFromRawBody(body))
   }
 
   return { handle, handleRequest }
